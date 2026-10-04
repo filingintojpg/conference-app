@@ -42,33 +42,27 @@ public class Application {
     @Column(name = "updated_at", nullable = false)
     private OffsetDateTime updatedAt;
 
-    @Column(name = "withdrawn_at")
-    private OffsetDateTime withdrawnAt;
-
-
     public Application(Participant participant, Direction direction, String title,
-                        String abstractText, String content, OffsetDateTime now) {
+                        String abstractText, String content) {
         this.participant = participant;
         this.direction = direction;
         this.title = title;
         this.abstractText = abstractText;
         this.content = content;
         this.status = ApplicationStatus.SUBMITTED;
-        this.createdAt = now;
-        this.updatedAt = now;
+        this.createdAt = OffsetDateTime.now();
+        this.updatedAt = OffsetDateTime.now();
     }
 
-
-    public void edit(String title, String abstractText, String content, OffsetDateTime now) {
+    public void edit(String title, String abstractText, String content) {
         this.title = title;
         this.abstractText = abstractText;
         this.content = content;
-        this.updatedAt = now;
+        this.updatedAt = OffsetDateTime.now();
     }
 
-    public void withdraw(OffsetDateTime now) {
+    public void withdraw() {
         this.status = ApplicationStatus.WITHDRAWN;
-        this.withdrawnAt = now;
-        this.updatedAt = now;
+        this.updatedAt = OffsetDateTime.now();
     }
 }

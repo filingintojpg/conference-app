@@ -20,10 +20,8 @@ public class Participant {
     @Column(nullable = false, unique = true, length = 320)
     private String email;
 
-
     public Participant(String fullName, String email) {
         this.fullName = fullName;
         this.email = email;
     }
-
 }

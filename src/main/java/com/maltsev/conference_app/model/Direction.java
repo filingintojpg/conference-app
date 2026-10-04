@@ -18,13 +18,11 @@ public class Direction {
     @Column(nullable = false, unique = true, length = 200)
     private String name;
 
-    @Column(name = "edit_deadline", nullable = false)
-    private OffsetDateTime editDeadline;
+    @Column(name = "deadline", nullable = false)
+    private OffsetDateTime deadline;
 
-
-    public Direction(String name, OffsetDateTime editDeadline) {
+    public Direction(String name, OffsetDateTime deadline) {
         this.name = name;
-        this.editDeadline = editDeadline;
+        this.deadline = deadline;
     }
-
 }

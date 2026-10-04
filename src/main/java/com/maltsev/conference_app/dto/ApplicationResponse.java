@@ -12,6 +12,5 @@ public record ApplicationResponse(
         String content,
         ApplicationStatus status,
         OffsetDateTime createdAt,
-        OffsetDateTime updatedAt,
-        OffsetDateTime withdrawnAt
+        OffsetDateTime updatedAt
 ) {}

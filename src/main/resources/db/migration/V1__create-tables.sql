@@ -7,7 +7,7 @@ CREATE TABLE participants (
 CREATE TABLE directions (
     id BIGSERIAL PRIMARY KEY,
     name VARCHAR(200) NOT NULL UNIQUE,
-    edit_deadline TIMESTAMPTZ NOT NULL
+    deadline TIMESTAMPTZ NOT NULL
 );
 
 CREATE TABLE applications (
@@ -20,6 +20,5 @@ CREATE TABLE applications (
     status VARCHAR(30) NOT NULL,
     created_at TIMESTAMPTZ NOT NULL,
     updated_at TIMESTAMPTZ NOT NULL,
-    withdrawn_at TIMESTAMPTZ,
     CONSTRAINT applications_status_chk CHECK (status IN ('SUBMITTED', 'WITHDRAWN'))
 );
