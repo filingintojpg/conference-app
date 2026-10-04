@@ -3,3 +3,4 @@ build
 .git
 .idea
 *.iml
+.env
