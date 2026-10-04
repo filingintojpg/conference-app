@@ -19,11 +19,19 @@
     {
       "key": "applicationId",
       "value": "1"
+    },
+    {
+      "key": "otherParticipantId",
+      "value": "2"
+    },
+    {
+      "key": "closedDirectionId",
+      "value": "3"
     }
   ],
   "item": [
     {
-      "name": "application",
+      "name": "applications",
       "item": [
         {
           "name": "createApplication",
@@ -31,22 +39,25 @@
             "method": "POST",
             "header": [
               {
+                "key": "X-Participant-Id",
+                "value": "{{participantId}}"
+              },
+              {
                 "key": "Content-Type",
                 "value": "application/json"
               }
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"participantId\": {{participantId}},\n  \"directionId\": {{directionId}},\n  \"title\": \"Spring Boot\",\n  \"abstractText\": \"Application abstract\",\n  \"content\": \"Application content\"\n}"
+              "raw": "{\n  \"directionId\": {{directionId}},\n  \"title\": \"Spring Boot\",\n  \"abstractText\": \"Application abstract\",\n  \"content\": \"Application content\"\n}"
             },
             "url": {
-              "raw": "{{baseUrl}}/application/create",
+              "raw": "{{baseUrl}}/applications",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
-                "application",
-                "create"
+                "applications"
               ]
             }
           },
@@ -104,6 +115,10 @@
             "method": "PUT",
             "header": [
               {
+                "key": "X-Participant-Id",
+                "value": "{{participantId}}"
+              },
+              {
                 "key": "Content-Type",
                 "value": "application/json"
               }
@@ -113,12 +128,12 @@
               "raw": "{\n  \"title\": \"Updated Spring Boot\",\n  \"abstractText\": \"Updated abstract\",\n  \"content\": \"Updated content\"\n}"
             },
             "url": {
-              "raw": "{{baseUrl}}/application/{{applicationId}}",
+              "raw": "{{baseUrl}}/applications/{{applicationId}}",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
-                "application",
+                "applications",
                 "{{applicationId}}"
               ]
             }
@@ -162,17 +177,121 @@
           ]
         },
         {
-          "name": "withdrawApplication",
+          "name": "updateApplication_foreignParticipant",
           "request": {
-            "method": "POST",
-            "header": [],
+            "method": "PUT",
+            "header": [
+              {
+                "key": "X-Participant-Id",
+                "value": "{{otherParticipantId}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
             "url": {
-              "raw": "{{baseUrl}}/application/{{applicationId}}/withdraw",
+              "raw": "{{baseUrl}}/applications/{{applicationId}}",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
-                "application",
+                "applications",
+                "{{applicationId}}"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Hacked title\",\n  \"abstractText\": \"Hacked abstract\",\n  \"content\": \"Hacked content\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 403', function () {",
+                  "    pm.response.to.have.status(403);",
+                  "});",
+                  "",
+                  "const body = pm.response.json();",
+                  "",
+                  "pm.test('Error message is present', function () {",
+                  "    pm.expect(body.error).to.be.a('string');",
+                  "});",
+                  "",
+                  "pm.test('Error is \"Application belongs to another participant\"', function () {",
+                  "    pm.expect(body.error).to.eql('Application belongs to another participant');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "withdrawApplication_foreignParticipant",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-Participant-Id",
+                "value": "{{otherParticipantId}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/applications/{{applicationId}}/withdraw",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "applications",
+                "{{applicationId}}",
+                "withdraw"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 403', function () {",
+                  "    pm.response.to.have.status(403);",
+                  "});",
+                  "",
+                  "const body = pm.response.json();",
+                  "",
+                  "pm.test('Error message is present', function () {",
+                  "    pm.expect(body.error).to.be.a('string');",
+                  "});",
+                  "",
+                  "pm.test('Error is \"Application belongs to another participant\"', function () {",
+                  "    pm.expect(body.error).to.eql('Application belongs to another participant');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "withdrawApplication",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-Participant-Id",
+                "value": "{{participantId}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/applications/{{applicationId}}/withdraw",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "applications",
                 "{{applicationId}}",
                 "withdraw"
               ]
@@ -214,6 +333,521 @@
                   "    pm.expect(body.title).to.eql('Updated Spring Boot');",
                   "    pm.expect(body.abstractText).to.eql('Updated abstract');",
                   "    pm.expect(body.content).to.eql('Updated content');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "updateApplication_afterWithdraw",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "X-Participant-Id",
+                "value": "{{participantId}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/applications/{{applicationId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "applications",
+                "{{applicationId}}"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Late\",\n  \"abstractText\": \"Late\",\n  \"content\": \"Late\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 409', function () {",
+                  "    pm.response.to.have.status(409);",
+                  "});",
+                  "",
+                  "const body = pm.response.json();",
+                  "",
+                  "pm.test('Error message is present', function () {",
+                  "    pm.expect(body.error).to.be.a('string');",
+                  "});",
+                  "",
+                  "pm.test('Error is \"Application is already withdrawn\"', function () {",
+                  "    pm.expect(body.error).to.eql('Application is already withdrawn');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "withdrawApplication_twice",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-Participant-Id",
+                "value": "{{participantId}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/applications/{{applicationId}}/withdraw",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "applications",
+                "{{applicationId}}",
+                "withdraw"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 409', function () {",
+                  "    pm.response.to.have.status(409);",
+                  "});",
+                  "",
+                  "const body = pm.response.json();",
+                  "",
+                  "pm.test('Error message is present', function () {",
+                  "    pm.expect(body.error).to.be.a('string');",
+                  "});",
+                  "",
+                  "pm.test('Error is \"Application is already withdrawn\"', function () {",
+                  "    pm.expect(body.error).to.eql('Application is already withdrawn');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "errors",
+      "item": [
+        {
+          "name": "createApplication_validationError",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-Participant-Id",
+                "value": "{{participantId}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/applications",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "applications"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"\",\n  \"abstractText\": \" \",\n  \"content\": \"\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 400', function () {",
+                  "    pm.response.to.have.status(400);",
+                  "});",
+                  "",
+                  "const body = pm.response.json();",
+                  "",
+                  "pm.test('All invalid fields are reported', function () {",
+                  "    pm.expect(body.error).to.eql('Validation failed');",
+                  "    pm.expect(body.fields).to.have.property('directionId');",
+                  "    pm.expect(body.fields).to.have.property('title');",
+                  "    pm.expect(body.fields).to.have.property('abstractText');",
+                  "    pm.expect(body.fields).to.have.property('content');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "createApplication_titleTooLong",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-Participant-Id",
+                "value": "{{participantId}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/applications",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "applications"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"directionId\": {{directionId}},\n  \"title\": \"xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\",\n  \"abstractText\": \"Abstract\",\n  \"content\": \"Content\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 400', function () {",
+                  "    pm.response.to.have.status(400);",
+                  "});",
+                  "",
+                  "const body = pm.response.json();",
+                  "",
+                  "pm.test('Error message is present', function () {",
+                  "    pm.expect(body.error).to.be.a('string');",
+                  "});",
+                  "",
+                  "pm.test('Error is \"Validation failed\"', function () {",
+                  "    pm.expect(body.error).to.eql('Validation failed');",
+                  "});",
+                  "",
+                  "pm.test('Field title is reported', function () {",
+                  "    pm.expect(body.fields).to.have.property('title');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "createApplication_missingParticipantHeader",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/applications",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "applications"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"directionId\": {{directionId}},\n  \"title\": \"Spring Boot\",\n  \"abstractText\": \"Abstract\",\n  \"content\": \"Content\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 400', function () {",
+                  "    pm.response.to.have.status(400);",
+                  "});",
+                  "",
+                  "const body = pm.response.json();",
+                  "",
+                  "pm.test('Error message is present', function () {",
+                  "    pm.expect(body.error).to.be.a('string');",
+                  "});",
+                  "",
+                  "pm.test('Error is \"Header X-Participant-Id is required\"', function () {",
+                  "    pm.expect(body.error).to.eql('Header X-Participant-Id is required');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "createApplication_participantNotFound",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-Participant-Id",
+                "value": "999999"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/applications",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "applications"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"directionId\": {{directionId}},\n  \"title\": \"Spring Boot\",\n  \"abstractText\": \"Abstract\",\n  \"content\": \"Content\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 404', function () {",
+                  "    pm.response.to.have.status(404);",
+                  "});",
+                  "",
+                  "const body = pm.response.json();",
+                  "",
+                  "pm.test('Error message is present', function () {",
+                  "    pm.expect(body.error).to.be.a('string');",
+                  "});",
+                  "",
+                  "pm.test('Error is \"Participant not found: 999999\"', function () {",
+                  "    pm.expect(body.error).to.eql('Participant not found: 999999');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "createApplication_directionNotFound",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-Participant-Id",
+                "value": "{{participantId}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/applications",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "applications"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"directionId\": 999999,\n  \"title\": \"Spring Boot\",\n  \"abstractText\": \"Abstract\",\n  \"content\": \"Content\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 404', function () {",
+                  "    pm.response.to.have.status(404);",
+                  "});",
+                  "",
+                  "const body = pm.response.json();",
+                  "",
+                  "pm.test('Error message is present', function () {",
+                  "    pm.expect(body.error).to.be.a('string');",
+                  "});",
+                  "",
+                  "pm.test('Error is \"Direction not found: 999999\"', function () {",
+                  "    pm.expect(body.error).to.eql('Direction not found: 999999');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "createApplication_afterT1",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-Participant-Id",
+                "value": "{{participantId}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/applications",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "applications"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"directionId\": {{closedDirectionId}},\n  \"title\": \"Spring Boot\",\n  \"abstractText\": \"Abstract\",\n  \"content\": \"Content\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 409', function () {",
+                  "    pm.response.to.have.status(409);",
+                  "});",
+                  "",
+                  "const body = pm.response.json();",
+                  "",
+                  "pm.test('Error message is present', function () {",
+                  "    pm.expect(body.error).to.be.a('string');",
+                  "});",
+                  "",
+                  "pm.test('Error is \"T1 has passed\"', function () {",
+                  "    pm.expect(body.error).to.eql('T1 has passed');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "updateApplication_notFound",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "X-Participant-Id",
+                "value": "{{participantId}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/applications/999999",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "applications",
+                "999999"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"t\",\n  \"abstractText\": \"a\",\n  \"content\": \"c\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 404', function () {",
+                  "    pm.response.to.have.status(404);",
+                  "});",
+                  "",
+                  "const body = pm.response.json();",
+                  "",
+                  "pm.test('Error message is present', function () {",
+                  "    pm.expect(body.error).to.be.a('string');",
+                  "});",
+                  "",
+                  "pm.test('Error is \"Application not found: 999999\"', function () {",
+                  "    pm.expect(body.error).to.eql('Application not found: 999999');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "withdrawApplication_notFound",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-Participant-Id",
+                "value": "{{participantId}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/applications/999999/withdraw",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "applications",
+                "999999",
+                "withdraw"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 404', function () {",
+                  "    pm.response.to.have.status(404);",
+                  "});",
+                  "",
+                  "const body = pm.response.json();",
+                  "",
+                  "pm.test('Error message is present', function () {",
+                  "    pm.expect(body.error).to.be.a('string');",
+                  "});",
+                  "",
+                  "pm.test('Error is \"Application not found: 999999\"', function () {",
+                  "    pm.expect(body.error).to.eql('Application not found: 999999');",
                   "});"
                 ]
               }
