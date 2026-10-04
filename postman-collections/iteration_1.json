@@ -1,0 +1,226 @@
+{
+  "info": {
+    "name": "iteration_1",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8080"
+    },
+    {
+      "key": "participantId",
+      "value": "1"
+    },
+    {
+      "key": "directionId",
+      "value": "1"
+    },
+    {
+      "key": "applicationId",
+      "value": "1"
+    }
+  ],
+  "item": [
+    {
+      "name": "application",
+      "item": [
+        {
+          "name": "createApplication",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"participantId\": {{participantId}},\n  \"directionId\": {{directionId}},\n  \"title\": \"Spring Boot\",\n  \"abstractText\": \"Application abstract\",\n  \"content\": \"Application content\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/application/create",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "application",
+                "create"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 201', function () {",
+                  "    pm.response.to.have.status(201);",
+                  "});",
+                  "",
+                  "pm.test('Response is JSON', function () {",
+                  "    pm.response.to.be.json;",
+                  "});",
+                  "",
+                  "const body = pm.response.json();",
+                  "",
+                  "pm.test('Response contains application id', function () {",
+                  "    pm.expect(body.id).to.exist;",
+                  "    pm.expect(body.id).to.be.a('number');",
+                  "});",
+                  "",
+                  "pm.test('Application is created with SUBMITTED status', function () {",
+                  "    pm.expect(body.status).to.eql('SUBMITTED');",
+                  "});",
+                  "",
+                  "pm.test('Participant and direction are correct', function () {",
+                  "    pm.expect(body.participantId).to.eql(Number(pm.variables.get('participantId')));",
+                  "    pm.expect(body.directionId).to.eql(Number(pm.variables.get('directionId')));",
+                  "});",
+                  "",
+                  "pm.test('Created application contains expected data', function () {",
+                  "    pm.expect(body.title).to.eql('Spring Boot');",
+                  "    pm.expect(body.abstractText).to.eql('Application abstract');",
+                  "    pm.expect(body.content).to.eql('Application content');",
+                  "});",
+                  "",
+                  "pm.test('Timestamps are present', function () {",
+                  "    pm.expect(body.createdAt).to.exist;",
+                  "    pm.expect(body.updatedAt).to.exist;",
+                  "    pm.expect(body.withdrawnAt).to.not.exist;",
+                  "});",
+                  "",
+                  "pm.variables.set('applicationId', body.id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "updateApplication",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Updated Spring Boot\",\n  \"abstractText\": \"Updated abstract\",\n  \"content\": \"Updated content\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/application/{{applicationId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "application",
+                "{{applicationId}}"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Response is JSON', function () {",
+                  "    pm.response.to.be.json;",
+                  "});",
+                  "",
+                  "const body = pm.response.json();",
+                  "",
+                  "pm.test('Updated application keeps its id', function () {",
+                  "    pm.expect(body.id).to.eql(Number(pm.variables.get('applicationId')));",
+                  "});",
+                  "",
+                  "pm.test('Updated fields are returned', function () {",
+                  "    pm.expect(body.title).to.eql('Updated Spring Boot');",
+                  "    pm.expect(body.abstractText).to.eql('Updated abstract');",
+                  "    pm.expect(body.content).to.eql('Updated content');",
+                  "});",
+                  "",
+                  "pm.test('Application remains submitted after edit', function () {",
+                  "    pm.expect(body.status).to.eql('SUBMITTED');",
+                  "});",
+                  "",
+                  "pm.test('Updated timestamp is present', function () {",
+                  "    pm.expect(body.updatedAt).to.exist;",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "withdrawApplication",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/application/{{applicationId}}/withdraw",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "application",
+                "{{applicationId}}",
+                "withdraw"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Response is JSON', function () {",
+                  "    pm.response.to.be.json;",
+                  "});",
+                  "",
+                  "const body = pm.response.json();",
+                  "",
+                  "pm.test('Withdrawn application keeps its id', function () {",
+                  "    pm.expect(body.id).to.eql(Number(pm.variables.get('applicationId')));",
+                  "});",
+                  "",
+                  "pm.test('Application status is WITHDRAWN', function () {",
+                  "    pm.expect(body.status).to.eql('WITHDRAWN');",
+                  "});",
+                  "",
+                  "pm.test('Withdrawn timestamp is present', function () {",
+                  "    pm.expect(body.withdrawnAt).to.exist;",
+                  "});",
+                  "",
+                  "pm.test('Updated timestamp is present', function () {",
+                  "    pm.expect(body.updatedAt).to.exist;",
+                  "});",
+                  "",
+                  "pm.test('Application data remains available after withdrawal', function () {",
+                  "    pm.expect(body.title).to.eql('Updated Spring Boot');",
+                  "    pm.expect(body.abstractText).to.eql('Updated abstract');",
+                  "    pm.expect(body.content).to.eql('Updated content');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
