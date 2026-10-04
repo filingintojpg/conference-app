@@ -3,6 +3,9 @@ package com.maltsev.conference_app.service;
 import com.maltsev.conference_app.dto.ApplicationResponse;
 import com.maltsev.conference_app.dto.CreateApplicationRequest;
 import com.maltsev.conference_app.dto.UpdateApplicationRequest;
+import com.maltsev.conference_app.exception.ConflictException;
+import com.maltsev.conference_app.exception.ForbiddenException;
+import com.maltsev.conference_app.exception.NotFoundException;
 import com.maltsev.conference_app.model.Application;
 import com.maltsev.conference_app.model.ApplicationStatus;
 import com.maltsev.conference_app.model.Direction;
@@ -30,58 +33,61 @@ public class ApplicationService {
     }
 
     @Transactional
-    public ApplicationResponse create(CreateApplicationRequest request) {
-        Participant participant = participantRepository.findById(request.participantId())
-                .orElseThrow(() -> new IllegalArgumentException("Participant not found: " + request.participantId()));
-        Direction direction = directionRepository.findById(request.directionId())
-                .orElseThrow(() -> new IllegalArgumentException("Direction not found: " + request.directionId()));
+    public ApplicationResponse create(Long participantId, CreateApplicationRequest request) {
+        Participant participant = participantRepository.findById(participantId).orElseThrow(() -> new NotFoundException("Participant not found: " + participantId));
+        Direction direction = directionRepository.findById(request.directionId()).orElseThrow(() -> new NotFoundException("Direction not found: " + request.directionId()));
 
-        OffsetDateTime now = OffsetDateTime.now();
-        checkDeadline(direction, now);
+        checkDeadline(direction, OffsetDateTime.now());
 
         Application application = applicationRepository.save(new Application(
                 participant,
                 direction,
                 request.title(),
                 request.abstractText(),
-                request.content(),
-                now
+                request.content()
         ));
 
         return toResponse(application);
     }
 
     @Transactional
-    public ApplicationResponse update(Long id, UpdateApplicationRequest request) {
+    public ApplicationResponse update(Long id, Long participantId, UpdateApplicationRequest request) {
         Application application = getApplication(id);
+        checkOwner(application, participantId);
         checkCanChange(application);
-        application.edit(request.title(), request.abstractText(), request.content(), OffsetDateTime.now());
+        application.edit(request.title(), request.abstractText(), request.content());
         return toResponse(application);
     }
 
     @Transactional
-    public ApplicationResponse withdraw(Long id) {
+    public ApplicationResponse withdraw(Long id, Long participantId) {
         Application application = getApplication(id);
+        checkOwner(application, participantId);
         checkCanChange(application);
-        application.withdraw(OffsetDateTime.now());
+        application.withdraw();
         return toResponse(application);
     }
 
     private Application getApplication(Long id) {
-        return applicationRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Application not found: " + id));
+        return applicationRepository.findById(id).orElseThrow(() -> new NotFoundException("Application not found: " + id));
+    }
+
+    private void checkOwner(Application application, Long participantId) {
+        if (!application.getParticipant().getId().equals(participantId)) {
+            throw new ForbiddenException("Application belongs to another participant");
+        }
     }
 
     private void checkCanChange(Application application) {
         if (application.getStatus() != ApplicationStatus.SUBMITTED) {
-            throw new IllegalStateException("Application is already withdrawn");
+            throw new ConflictException("Application is already withdrawn");
         }
         checkDeadline(application.getDirection(), OffsetDateTime.now());
     }
 
     private void checkDeadline(Direction direction, OffsetDateTime now) {
-        if (!now.isBefore(direction.getEditDeadline())) {
-            throw new IllegalStateException("T1 has passed");
+        if (!now.isBefore(direction.getDeadline())) {
+            throw new ConflictException("T1 has passed");
         }
     }
 
@@ -95,8 +101,7 @@ public class ApplicationService {
                 application.getContent(),
                 application.getStatus(),
                 application.getCreatedAt(),
-                application.getUpdatedAt(),
-                application.getWithdrawnAt()
+                application.getUpdatedAt()
         );
     }
 }
