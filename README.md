@@ -9,6 +9,12 @@
 cp .env.example .env && docker compose up --build
 ```
 
+### Run
+
+```bash
+docker compose up
+```
+
 Application: `http://localhost:8080`
 
 ### Stop
@@ -19,56 +25,35 @@ docker compose down
 
 ## API endpoints
 
-### POST `/application/create`
+### POST `/applications`
 
 Create an application.
 
 ```json
 {
-  "participantId": 1,
   "directionId": 1,
-  "title": "Spring Boot",
+  "title": "Title",
   "abstractText": "Application abstract",
   "content": "Application content"
 }
 ```
 
-### PUT `/application/{id}`
+### PUT `/applications/{id}`
 
 Update an application before T1.
 
 ```json
 {
-  "title": "Updated Spring Boot",
+  "title": "Updated title",
   "abstractText": "Updated abstract",
   "content": "Updated content"
 }
 ```
 
-### POST `/application/{id}/withdraw`
+### POST `/applications/{id}/withdraw`
 
-Withdraw an application before T1.
-
-```text
-POST /application/1/withdraw
-```
-
-## Postman
-
-Import:
+Withdraw an application.
 
 ```text
-postman-collections/iteration_1.json
+POST /applications/1/withdraw
 ```
-
-Set `participantId` and `directionId` to existing database records before creating an application.
-
-## Database migrations
-
-Migrations are stored in:
-
-```text
-src/main/resources/db/migration/
-```
-
-Do not edit an already applied migration. Add a new migration instead.
