@@ -57,3 +57,11 @@ Withdraw an application.
 ```text
 POST /applications/1/withdraw
 ```
+
+## Tests
+
+```bash
+./gradlew test
+```
+
+HTML report: `build/reports/tests/test/index.html`.
