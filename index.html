@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Conference App</title>
+  <style>
+    body { font-family: sans-serif; display: flex; justify-content: center; margin: 0; padding: 24px; }
+    main { width: 100%; max-width: 480px; }
+    h1 { text-align: center; }
+    label { display: block; margin-top: 12px; }
+    input, textarea, select { width: 100%; box-sizing: border-box; padding: 6px; font: inherit; }
+    textarea { min-height: 80px; }
+    button { margin-top: 16px; padding: 8px 16px; font: inherit; }
+    small { color: #666; }
+    pre { background: #f4f4f4; padding: 12px; white-space: pre-wrap; word-break: break-word; border-left: 4px solid #999; }
+    pre.ok { border-color: green; }
+    pre.error { border-color: red; }
+  </style>
+</head>
+<body>
+<main>
+  <h1>Conference App</h1>
+
+  <label>Действие
+    <select id="action">
+      <option value="create">Подать заявку</option>
+      <option value="update">Обновить заявку</option>
+      <option value="withdraw">Отозвать заявку</option>
+    </select>
+  </label>
+
+  <form id="create">
+    <label>ID участника (X-Participant-Id)
+      <input type="number" name="participantId" required>
+      <small>В тестовых данных: 1, 2, 3</small>
+    </label>
+    <label>ID направления
+      <input type="number" name="directionId" required>
+      <small>1 — Программирование, 2 — Русский язык, 3 — Биология (дедлайн прошёл)</small>
+    </label>
+    <label>Название <input type="text" name="title" maxlength="300" required></label>
+    <label>Аннотация <textarea name="abstractText" required></textarea></label>
+    <label>Содержание <textarea name="content" required></textarea></label>
+    <button type="submit">Отправить</button>
+  </form>
+
+  <form id="update" hidden>
+    <label>ID участника (X-Participant-Id)
+      <input type="number" name="participantId" required>
+    </label>
+    <label>ID заявки <input type="number" name="id" required></label>
+    <label>Название <input type="text" name="title" maxlength="300" required></label>
+    <label>Аннотация <textarea name="abstractText" required></textarea></label>
+    <label>Содержание <textarea name="content" required></textarea></label>
+    <button type="submit">Обновить</button>
+  </form>
+
+  <form id="withdraw" hidden>
+    <label>ID участника (X-Participant-Id)
+      <input type="number" name="participantId" required>
+    </label>
+    <label>ID заявки <input type="number" name="id" required></label>
+    <button type="submit">Отозвать</button>
+  </form>
+
+  <h3>Ответ</h3>
+  <pre id="response">Пока ничего не отправлено</pre>
+</main>
+
+<script>
+  const forms = {
+    create: document.getElementById('create'),
+    update: document.getElementById('update'),
+    withdraw: document.getElementById('withdraw'),
+  };
+  const out = document.getElementById('response');
+
+  document.getElementById('action').addEventListener('change', e => {
+    for (const name in forms) forms[name].hidden = name !== e.target.value;
+  });
+
+  function show(text, cls) {
+    out.textContent = text;
+    out.className = cls;
+  }
+
+  async function send(url, method, participantId, body) {
+    const headers = { 'X-Participant-Id': participantId };
+    if (body) headers['Content-Type'] = 'application/json';
+    try {
+      const res = await fetch(url, { method, headers, body: body && JSON.stringify(body) });
+      const raw = await res.text();
+      let pretty = raw;
+      try { pretty = JSON.stringify(JSON.parse(raw), null, 2); } catch (_) {}
+      show(res.status + ' ' + res.statusText + '\n\n' + pretty, res.ok ? 'ok' : 'error');
+    } catch (err) {
+      show('Ошибка сети: ' + err.message, 'error');
+    }
+  }
+
+  forms.create.addEventListener('submit', e => {
+    e.preventDefault();
+    const f = e.target;
+    send('/applications', 'POST', f.participantId.value, {
+      directionId: Number(f.directionId.value),
+      title: f.title.value,
+      abstractText: f.abstractText.value,
+      content: f.content.value,
+    });
+  });
+
+  forms.update.addEventListener('submit', e => {
+    e.preventDefault();
+    const f = e.target;
+    send('/applications/' + f.id.value, 'PUT', f.participantId.value, {
+      title: f.title.value,
+      abstractText: f.abstractText.value,
+      content: f.content.value,
+    });
+  });
+
+  forms.withdraw.addEventListener('submit', e => {
+    e.preventDefault();
+    const f = e.target;
+    send('/applications/' + f.id.value + '/withdraw', 'POST', f.participantId.value);
+  });
+</script>
+</body>
+</html>
