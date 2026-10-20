@@ -21,8 +21,13 @@ public class Direction {
     @Column(name = "deadline", nullable = false)
     private OffsetDateTime deadline;
 
-    public Direction(String name, OffsetDateTime deadline) {
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "organizer_id", nullable = false)
+    private User organizer;
+
+    public Direction(String name, OffsetDateTime deadline, User organizer) {
         this.name = name;
         this.deadline = deadline;
+        this.organizer = organizer;
     }
 }
