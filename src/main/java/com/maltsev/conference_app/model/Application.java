@@ -17,7 +17,7 @@ public class Application {
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "participant_id", nullable = false)
-    private Participant participant;
+    private User participant;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "direction_id", nullable = false)
@@ -42,7 +42,7 @@ public class Application {
     @Column(name = "updated_at", nullable = false)
     private OffsetDateTime updatedAt;
 
-    public Application(Participant participant, Direction direction, String title,
+    public Application(User participant, Direction direction, String title,
                         String abstractText, String content) {
         this.participant = participant;
         this.direction = direction;
