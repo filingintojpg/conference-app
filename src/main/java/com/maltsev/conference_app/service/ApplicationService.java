@@ -9,10 +9,10 @@ import com.maltsev.conference_app.exception.NotFoundException;
 import com.maltsev.conference_app.model.Application;
 import com.maltsev.conference_app.model.ApplicationStatus;
 import com.maltsev.conference_app.model.Direction;
-import com.maltsev.conference_app.model.Participant;
+import com.maltsev.conference_app.model.User;
 import com.maltsev.conference_app.repository.ApplicationRepository;
 import com.maltsev.conference_app.repository.DirectionRepository;
-import com.maltsev.conference_app.repository.ParticipantRepository;
+import com.maltsev.conference_app.repository.UserRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -21,20 +21,20 @@ import java.time.OffsetDateTime;
 @Service
 public class ApplicationService {
     private final ApplicationRepository applicationRepository;
-    private final ParticipantRepository participantRepository;
+    private final UserRepository userRepository;
     private final DirectionRepository directionRepository;
 
     public ApplicationService(ApplicationRepository applicationRepository,
-                              ParticipantRepository participantRepository,
+                              UserRepository userRepository,
                               DirectionRepository directionRepository) {
         this.applicationRepository = applicationRepository;
-        this.participantRepository = participantRepository;
+        this.userRepository = userRepository;
         this.directionRepository = directionRepository;
     }
 
     @Transactional
     public ApplicationResponse create(Long participantId, CreateApplicationRequest request) {
-        Participant participant = participantRepository.findById(participantId).orElseThrow(() -> new NotFoundException("Participant not found: " + participantId));
+        User participant = userRepository.findById(participantId).orElseThrow(() -> new NotFoundException("User not found: " + participantId));
         Direction direction = directionRepository.findById(request.directionId()).orElseThrow(() -> new NotFoundException("Direction not found: " + request.directionId()));
 
         checkDeadline(direction, OffsetDateTime.now());
