@@ -14,7 +14,7 @@
             "method": "POST",
             "header": [
               {
-                "key": "X-Participant-Id",
+                "key": "X-User-Id",
                 "value": "1"
               }
             ],
@@ -46,7 +46,7 @@
             "method": "POST",
             "header": [
               {
-                "key": "X-Participant-Id",
+                "key": "X-User-Id",
                 "value": "2"
               }
             ],
@@ -78,7 +78,7 @@
             "method": "PUT",
             "header": [
               {
-                "key": "X-Participant-Id",
+                "key": "X-User-Id",
                 "value": "1"
               }
             ],
@@ -111,7 +111,7 @@
             "method": "PUT",
             "header": [
               {
-                "key": "X-Participant-Id",
+                "key": "X-User-Id",
                 "value": "2"
               }
             ],
@@ -144,7 +144,7 @@
             "method": "POST",
             "header": [
               {
-                "key": "X-Participant-Id",
+                "key": "X-User-Id",
                 "value": "1"
               }
             ],
@@ -174,7 +174,7 @@
             "method": "POST",
             "header": [
               {
-                "key": "X-Participant-Id",
+                "key": "X-User-Id",
                 "value": "1"
               }
             ],
@@ -201,7 +201,7 @@
           }
         },
         {
-          "name": "[400] header X-Participant-Id is missing",
+          "name": "[400] header X-User-Id is missing",
           "request": {
             "method": "POST",
             "header": [],
@@ -233,7 +233,7 @@
             "method": "POST",
             "header": [
               {
-                "key": "X-Participant-Id",
+                "key": "X-User-Id",
                 "value": "999"
               }
             ],
@@ -265,7 +265,7 @@
             "method": "POST",
             "header": [
               {
-                "key": "X-Participant-Id",
+                "key": "X-User-Id",
                 "value": "1"
               }
             ],
@@ -297,7 +297,7 @@
             "method": "PUT",
             "header": [
               {
-                "key": "X-Participant-Id",
+                "key": "X-User-Id",
                 "value": "1"
               }
             ],
@@ -330,7 +330,7 @@
             "method": "PUT",
             "header": [
               {
-                "key": "X-Participant-Id",
+                "key": "X-User-Id",
                 "value": "1"
               }
             ],
@@ -363,7 +363,7 @@
             "method": "PUT",
             "header": [
               {
-                "key": "X-Participant-Id",
+                "key": "X-User-Id",
                 "value": "1"
               }
             ],
@@ -396,7 +396,7 @@
             "method": "POST",
             "header": [
               {
-                "key": "X-Participant-Id",
+                "key": "X-User-Id",
                 "value": "1"
               }
             ],
