@@ -8,8 +8,8 @@ import lombok.NoArgsConstructor;
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Entity
-@Table(name = "participants")
-public class Participant {
+@Table(name = "users")
+public class User {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -20,8 +20,13 @@ public class Participant {
     @Column(nullable = false, unique = true, length = 320)
     private String email;
 
-    public Participant(String fullName, String email) {
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 30)
+    private Role role;
+
+    public User(String fullName, String email, Role role) {
         this.fullName = fullName;
         this.email = email;
+        this.role = role;
     }
 }
