@@ -23,39 +23,55 @@ Application: `http://localhost:8080`
 docker compose down
 ```
 
+### Delete
+
+```bash
+docker compose down -v
+```
+
 ## API endpoints
 
-### POST `/applications`
+### Participant
 
-Create an application.
+#### POST `/applications` - Create an application.
 
 ```json
 {
   "directionId": 1,
   "title": "Title",
-  "abstractText": "Application abstract",
-  "content": "Application content"
+  "abstractText": "Abstract text",
+  "content": "Content"
 }
 ```
 
-### PUT `/applications/{id}`
-
-Update an application before T1.
+#### PUT `/applications/{id}` - Update an application.
 
 ```json
 {
   "title": "Updated title",
-  "abstractText": "Updated abstract",
+  "abstractText": "Updated abstract text",
   "content": "Updated content"
 }
 ```
 
-### POST `/applications/{id}/withdraw`
-
-Withdraw an application.
+#### POST `/applications/{id}/withdraw` - Withdraw an application.
 
 ```text
 POST /applications/1/withdraw
+```
+
+### Organizer
+
+#### GET `/organizer/applications` - List of applications with filters.
+
+```text
+GET /organizer/applications?directionId=1&status=SUBMITTED
+```
+
+#### GET `/organizer/applications/{id}` - Application in organizer's direction.
+
+```text
+GET /organizer/applications/1
 ```
 
 ## Tests
@@ -63,5 +79,3 @@ POST /applications/1/withdraw
 ```bash
 ./gradlew test
 ```
-
-HTML report: `build/reports/tests/test/index.html`.
