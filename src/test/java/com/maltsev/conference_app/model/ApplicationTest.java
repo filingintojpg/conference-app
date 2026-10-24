@@ -9,7 +9,7 @@ import java.time.OffsetDateTime;
 import static org.junit.jupiter.api.Assertions.*;
 
 class ApplicationTest {
-    private Participant participant;
+    private User participant;
     private Direction direction;
 
     @BeforeEach

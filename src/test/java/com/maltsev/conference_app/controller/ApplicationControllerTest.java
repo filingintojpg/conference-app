@@ -33,7 +33,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  */
 @ExtendWith(MockitoExtension.class)
 class ApplicationControllerTest {
-    private static final String HEADER = "X-Participant-Id";
+    private static final String HEADER = "X-User-Id";
 
     @Mock
     private ApplicationService service;
@@ -221,7 +221,7 @@ class ApplicationControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(validCreateJson()))
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.error").value("Header X-Participant-Id is required"));
+                .andExpect(jsonPath("$.error").value("Header X-User-Id is required"));
 
         verifyNoInteractions(service);
     }
@@ -233,7 +233,7 @@ class ApplicationControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(validCreateJson()))
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.error").value("Invalid value for 'X-Participant-Id'"));
+                .andExpect(jsonPath("$.error").value("Invalid value for 'X-User-Id'"));
 
         verifyNoInteractions(service);
     }
@@ -287,14 +287,14 @@ class ApplicationControllerTest {
     @Test
     void create_participantNotFound_returns404() throws Exception {
         when(service.create(eq(999L), any(CreateApplicationRequest.class)))
-                .thenThrow(new NotFoundException("Participant not found: 999"));
+                .thenThrow(new NotFoundException("User not found: 999"));
 
         mockMvc.perform(post("/applications")
                         .header(HEADER, "999")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(validCreateJson()))
                 .andExpect(status().isNotFound())
-                .andExpect(jsonPath("$.error").value("Participant not found: 999"));
+                .andExpect(jsonPath("$.error").value("User not found: 999"));
     }
 
     @Test
@@ -418,7 +418,7 @@ class ApplicationControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(validUpdateJson()))
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.error").value("Header X-Participant-Id is required"));
+                .andExpect(jsonPath("$.error").value("Header X-User-Id is required"));
 
         verifyNoInteractions(service);
     }
@@ -430,7 +430,7 @@ class ApplicationControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(validUpdateJson()))
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.error").value("Invalid value for 'X-Participant-Id'"));
+                .andExpect(jsonPath("$.error").value("Invalid value for 'X-User-Id'"));
 
         verifyNoInteractions(service);
     }
@@ -560,7 +560,7 @@ class ApplicationControllerTest {
     void withdraw_missingHeader_returns400() throws Exception {
         mockMvc.perform(post("/applications/100/withdraw"))
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.error").value("Header X-Participant-Id is required"));
+                .andExpect(jsonPath("$.error").value("Header X-User-Id is required"));
 
         verifyNoInteractions(service);
     }
@@ -569,7 +569,7 @@ class ApplicationControllerTest {
     void withdraw_headerIsNotANumber_returns400() throws Exception {
         mockMvc.perform(post("/applications/100/withdraw").header(HEADER, "abc"))
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.error").value("Invalid value for 'X-Participant-Id'"));
+                .andExpect(jsonPath("$.error").value("Invalid value for 'X-User-Id'"));
 
         verifyNoInteractions(service);
     }

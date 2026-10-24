@@ -19,14 +19,14 @@ class EntityMappingTest {
     @Test
     void entities_areMarkedAsJpaEntities() {
         assertNotNull(Application.class.getAnnotation(Entity.class));
-        assertNotNull(Participant.class.getAnnotation(Entity.class));
+        assertNotNull(User.class.getAnnotation(Entity.class));
         assertNotNull(Direction.class.getAnnotation(Entity.class));
     }
 
     @Test
     void entities_useTableNamesFromMigration() {
         assertEquals("applications", Application.class.getAnnotation(Table.class).name());
-        assertEquals("participants", Participant.class.getAnnotation(Table.class).name());
+        assertEquals("users", User.class.getAnnotation(Table.class).name());
         assertEquals("directions", Direction.class.getAnnotation(Table.class).name());
     }
 

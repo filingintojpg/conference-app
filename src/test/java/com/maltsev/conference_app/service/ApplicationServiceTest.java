@@ -10,10 +10,10 @@ import com.maltsev.conference_app.exception.NotFoundException;
 import com.maltsev.conference_app.model.Application;
 import com.maltsev.conference_app.model.ApplicationStatus;
 import com.maltsev.conference_app.model.Direction;
-import com.maltsev.conference_app.model.Participant;
+import com.maltsev.conference_app.model.User;
 import com.maltsev.conference_app.repository.ApplicationRepository;
 import com.maltsev.conference_app.repository.DirectionRepository;
-import com.maltsev.conference_app.repository.ParticipantRepository;
+import com.maltsev.conference_app.repository.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -44,19 +44,19 @@ class ApplicationServiceTest {
     @Mock
     private ApplicationRepository applicationRepository;
     @Mock
-    private ParticipantRepository participantRepository;
+    private UserRepository userRepository;
     @Mock
     private DirectionRepository directionRepository;
 
     private ApplicationService service;
 
-    private Participant owner;
+    private User owner;
     private Direction openDirection;
     private Direction closedDirection;
 
     @BeforeEach
     void setUp() {
-        service = new ApplicationService(applicationRepository, participantRepository, directionRepository);
+        service = new ApplicationService(applicationRepository, userRepository, directionRepository);
         owner = TestData.participant(OWNER_ID);
         openDirection = TestData.openDirection(OPEN_DIRECTION_ID);
         closedDirection = TestData.closedDirection(CLOSED_DIRECTION_ID);
@@ -97,7 +97,7 @@ class ApplicationServiceTest {
 
     @Test
     void create_success_savesApplicationWithDataFromRequest() {
-        when(participantRepository.findById(OWNER_ID)).thenReturn(Optional.of(owner));
+        when(userRepository.findById(OWNER_ID)).thenReturn(Optional.of(owner));
         when(directionRepository.findById(OPEN_DIRECTION_ID)).thenReturn(Optional.of(openDirection));
         stubSaveAssigningId();
 
@@ -115,7 +115,7 @@ class ApplicationServiceTest {
 
     @Test
     void create_success_savedApplicationHasStatusSubmitted() {
-        when(participantRepository.findById(OWNER_ID)).thenReturn(Optional.of(owner));
+        when(userRepository.findById(OWNER_ID)).thenReturn(Optional.of(owner));
         when(directionRepository.findById(OPEN_DIRECTION_ID)).thenReturn(Optional.of(openDirection));
         stubSaveAssigningId();
 
@@ -128,7 +128,7 @@ class ApplicationServiceTest {
 
     @Test
     void create_success_returnsResponseWithAllFields() {
-        when(participantRepository.findById(OWNER_ID)).thenReturn(Optional.of(owner));
+        when(userRepository.findById(OWNER_ID)).thenReturn(Optional.of(owner));
         when(directionRepository.findById(OPEN_DIRECTION_ID)).thenReturn(Optional.of(openDirection));
         stubSaveAssigningId();
 
@@ -147,20 +147,20 @@ class ApplicationServiceTest {
 
     @Test
     void create_success_lookedUpParticipantAndDirectionByIds() {
-        when(participantRepository.findById(OWNER_ID)).thenReturn(Optional.of(owner));
+        when(userRepository.findById(OWNER_ID)).thenReturn(Optional.of(owner));
         when(directionRepository.findById(OPEN_DIRECTION_ID)).thenReturn(Optional.of(openDirection));
         stubSaveAssigningId();
 
         service.create(OWNER_ID, createRequest(OPEN_DIRECTION_ID));
 
-        verify(participantRepository).findById(OWNER_ID);
+        verify(userRepository).findById(OWNER_ID);
         verify(directionRepository).findById(OPEN_DIRECTION_ID);
     }
 
     @Test
     void create_deadlineIsStillAMinuteAway_succeeds() {
         Direction almostClosed = TestData.direction(OPEN_DIRECTION_ID, OffsetDateTime.now().plusMinutes(1));
-        when(participantRepository.findById(OWNER_ID)).thenReturn(Optional.of(owner));
+        when(userRepository.findById(OWNER_ID)).thenReturn(Optional.of(owner));
         when(directionRepository.findById(OPEN_DIRECTION_ID)).thenReturn(Optional.of(almostClosed));
         stubSaveAssigningId();
 
@@ -171,17 +171,17 @@ class ApplicationServiceTest {
 
     @Test
     void create_participantNotFound_throwsNotFound() {
-        when(participantRepository.findById(99L)).thenReturn(Optional.empty());
+        when(userRepository.findById(99L)).thenReturn(Optional.empty());
 
         NotFoundException exception = assertThrows(NotFoundException.class,
                 () -> service.create(99L, createRequest(OPEN_DIRECTION_ID)));
 
-        assertEquals("Participant not found: 99", exception.getMessage());
+        assertEquals("User not found: 99", exception.getMessage());
     }
 
     @Test
     void create_participantNotFound_doesNotLookForDirectionAndDoesNotSave() {
-        when(participantRepository.findById(99L)).thenReturn(Optional.empty());
+        when(userRepository.findById(99L)).thenReturn(Optional.empty());
 
         assertThrows(NotFoundException.class, () -> service.create(99L, createRequest(OPEN_DIRECTION_ID)));
 
@@ -191,7 +191,7 @@ class ApplicationServiceTest {
 
     @Test
     void create_directionNotFound_throwsNotFound() {
-        when(participantRepository.findById(OWNER_ID)).thenReturn(Optional.of(owner));
+        when(userRepository.findById(OWNER_ID)).thenReturn(Optional.of(owner));
         when(directionRepository.findById(99L)).thenReturn(Optional.empty());
 
         NotFoundException exception = assertThrows(NotFoundException.class,
@@ -202,7 +202,7 @@ class ApplicationServiceTest {
 
     @Test
     void create_directionNotFound_doesNotSave() {
-        when(participantRepository.findById(OWNER_ID)).thenReturn(Optional.of(owner));
+        when(userRepository.findById(OWNER_ID)).thenReturn(Optional.of(owner));
         when(directionRepository.findById(99L)).thenReturn(Optional.empty());
 
         assertThrows(NotFoundException.class, () -> service.create(OWNER_ID, createRequest(99L)));
@@ -212,7 +212,7 @@ class ApplicationServiceTest {
 
     @Test
     void create_deadlinePassed_throwsConflict() {
-        when(participantRepository.findById(OWNER_ID)).thenReturn(Optional.of(owner));
+        when(userRepository.findById(OWNER_ID)).thenReturn(Optional.of(owner));
         when(directionRepository.findById(CLOSED_DIRECTION_ID)).thenReturn(Optional.of(closedDirection));
 
         ConflictException exception = assertThrows(ConflictException.class,
@@ -223,7 +223,7 @@ class ApplicationServiceTest {
 
     @Test
     void create_deadlinePassed_doesNotSave() {
-        when(participantRepository.findById(OWNER_ID)).thenReturn(Optional.of(owner));
+        when(userRepository.findById(OWNER_ID)).thenReturn(Optional.of(owner));
         when(directionRepository.findById(CLOSED_DIRECTION_ID)).thenReturn(Optional.of(closedDirection));
 
         assertThrows(ConflictException.class, () -> service.create(OWNER_ID, createRequest(CLOSED_DIRECTION_ID)));
@@ -234,7 +234,7 @@ class ApplicationServiceTest {
     @Test
     void create_deadlinePassedOneSecondAgo_throwsConflict() {
         Direction justClosed = TestData.direction(CLOSED_DIRECTION_ID, OffsetDateTime.now().minusSeconds(1));
-        when(participantRepository.findById(OWNER_ID)).thenReturn(Optional.of(owner));
+        when(userRepository.findById(OWNER_ID)).thenReturn(Optional.of(owner));
         when(directionRepository.findById(CLOSED_DIRECTION_ID)).thenReturn(Optional.of(justClosed));
 
         assertThrows(ConflictException.class, () -> service.create(OWNER_ID, createRequest(CLOSED_DIRECTION_ID)));
@@ -290,7 +290,7 @@ class ApplicationServiceTest {
         service.update(APPLICATION_ID, OWNER_ID, updateRequest());
 
         verify(applicationRepository).findById(APPLICATION_ID);
-        verifyNoInteractions(participantRepository, directionRepository);
+        verifyNoInteractions(userRepository, directionRepository);
     }
 
     @Test
@@ -516,7 +516,7 @@ class ApplicationServiceTest {
 
     @Test
     void fullLifecycle_createUpdateWithdraw_thenNothingCanBeChanged() {
-        when(participantRepository.findById(OWNER_ID)).thenReturn(Optional.of(owner));
+        when(userRepository.findById(OWNER_ID)).thenReturn(Optional.of(owner));
         when(directionRepository.findById(OPEN_DIRECTION_ID)).thenReturn(Optional.of(openDirection));
         stubSaveAssigningId();
 
