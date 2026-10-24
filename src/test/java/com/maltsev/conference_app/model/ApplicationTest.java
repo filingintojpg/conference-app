@@ -93,12 +93,12 @@ class ApplicationTest {
     }
 
     @Test
-    void edit_doesNotChangeStatus() {
+    void edit_setsStatusEdited() {
         Application application = newApplication();
 
         application.edit("New title", "New abstract", "New content");
 
-        assertEquals(ApplicationStatus.SUBMITTED, application.getStatus());
+        assertEquals(ApplicationStatus.EDITED, application.getStatus());
     }
 
     @Test

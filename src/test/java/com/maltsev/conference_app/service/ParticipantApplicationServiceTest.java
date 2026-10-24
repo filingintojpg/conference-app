@@ -256,13 +256,13 @@ class ParticipantApplicationServiceTest {
     }
 
     @Test
-    void update_success_keepsStatusAndCreationTime() {
+    void update_success_setsStatusEditedAndKeepsCreationTime() {
         Application application = existingApplication(openDirection);
         OffsetDateTime createdAt = application.getCreatedAt();
 
         service.update(APPLICATION_ID, OWNER_ID, updateRequest());
 
-        assertEquals(ApplicationStatus.SUBMITTED, application.getStatus());
+        assertEquals(ApplicationStatus.EDITED, application.getStatus());
         assertEquals(createdAt, application.getCreatedAt());
     }
 
@@ -278,7 +278,7 @@ class ParticipantApplicationServiceTest {
         assertEquals("New title", response.title());
         assertEquals("New abstract", response.abstractText());
         assertEquals("New content", response.content());
-        assertEquals(ApplicationStatus.SUBMITTED, response.status());
+        assertEquals(ApplicationStatus.EDITED, response.status());
         assertEquals(application.getCreatedAt(), response.createdAt());
         assertFalse(response.updatedAt().isBefore(response.createdAt()));
     }
@@ -393,6 +393,17 @@ class ParticipantApplicationServiceTest {
         assertEquals("Second", application.getContent());
     }
 
+    @Test
+    void update_afterEdit_canBeEditedAgainAndStatusStaysEdited() {
+        Application application = existingApplication(openDirection);
+        application.edit("First", "First", "First");
+
+        ApplicationResponse response = service.update(APPLICATION_ID, OWNER_ID, updateRequest());
+
+        assertEquals("New title", response.title());
+        assertEquals(ApplicationStatus.EDITED, response.status());
+    }
+
     // =====================================================================
     //  withdraw
     // =====================================================================
@@ -500,6 +511,17 @@ class ParticipantApplicationServiceTest {
     }
 
     @Test
+    void withdraw_editedApplication_succeeds() {
+        Application application = existingApplication(openDirection);
+        application.edit("Edited", "Edited", "Edited");
+
+        ApplicationResponse response = service.withdraw(APPLICATION_ID, OWNER_ID);
+
+        assertEquals(ApplicationStatus.WITHDRAWN, response.status());
+        assertEquals("Edited", response.title());
+    }
+
+    @Test
     void withdraw_twice_secondCallThrowsConflict() {
         Application application = existingApplication(openDirection);
 
@@ -533,7 +555,7 @@ class ParticipantApplicationServiceTest {
         // 2. редактируем
         ApplicationResponse updated = service.update(100L, OWNER_ID, updateRequest());
         assertEquals("New title", updated.title());
-        assertEquals(ApplicationStatus.SUBMITTED, updated.status());
+        assertEquals(ApplicationStatus.EDITED, updated.status());
 
         // 3. отзываем
         ApplicationResponse withdrawn = service.withdraw(100L, OWNER_ID);

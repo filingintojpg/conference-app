@@ -14,10 +14,15 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 class ApplicationStatusTest {
 
     @Test
-    void hasExactlyTwoStatusesInDeclaredOrder() {
+    void hasExactlyThreeStatusesInDeclaredOrder() {
         assertArrayEquals(
-                new ApplicationStatus[]{ApplicationStatus.SUBMITTED, ApplicationStatus.WITHDRAWN},
+                new ApplicationStatus[]{ApplicationStatus.SUBMITTED, ApplicationStatus.EDITED, ApplicationStatus.WITHDRAWN},
                 ApplicationStatus.values());
+    }
+
+    @Test
+    void edited_isStoredInDatabaseAsEDITED() {
+        assertEquals("EDITED", ApplicationStatus.EDITED.name());
     }
 
     @Test
@@ -33,6 +38,7 @@ class ApplicationStatusTest {
     @Test
     void valueOf_findsStatusByName() {
         assertEquals(ApplicationStatus.SUBMITTED, ApplicationStatus.valueOf("SUBMITTED"));
+        assertEquals(ApplicationStatus.EDITED, ApplicationStatus.valueOf("EDITED"));
         assertEquals(ApplicationStatus.WITHDRAWN, ApplicationStatus.valueOf("WITHDRAWN"));
     }
 
