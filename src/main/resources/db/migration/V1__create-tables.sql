@@ -27,5 +27,5 @@ CREATE TABLE applications (
     status VARCHAR(30) NOT NULL,
     created_at TIMESTAMPTZ NOT NULL,
     updated_at TIMESTAMPTZ NOT NULL,
-    CONSTRAINT applications_status_chk CHECK (status IN ('SUBMITTED', 'WITHDRAWN'))
+    CONSTRAINT applications_status_chk CHECK (status IN ('SUBMITTED', 'EDITED', 'WITHDRAWN'))
 );

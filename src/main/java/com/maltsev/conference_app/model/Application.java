@@ -58,6 +58,7 @@ public class Application {
         this.title = title;
         this.abstractText = abstractText;
         this.content = content;
+        this.status = ApplicationStatus.EDITED;
         this.updatedAt = OffsetDateTime.now();
     }
 
