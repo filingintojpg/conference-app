@@ -42,3 +42,4 @@ out/
 ### Environment ###
 .env
 postman-collections/postman
+postman-collections/.postman
