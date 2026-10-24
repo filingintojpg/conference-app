@@ -47,7 +47,7 @@ public class ParticipantApplicationService {
                 request.content()
         ));
 
-        return toResponse(application);
+        return ApplicationResponse.from(application);
     }
 
     @Transactional
@@ -56,7 +56,7 @@ public class ParticipantApplicationService {
         checkOwner(application, participantId);
         checkCanChange(application);
         application.edit(request.title(), request.abstractText(), request.content());
-        return toResponse(application);
+        return ApplicationResponse.from(application);
     }
 
     @Transactional
@@ -65,7 +65,7 @@ public class ParticipantApplicationService {
         checkOwner(application, participantId);
         checkCanChange(application);
         application.withdraw();
-        return toResponse(application);
+        return ApplicationResponse.from(application);
     }
 
     private Application getApplication(Long id) {
@@ -89,19 +89,5 @@ public class ParticipantApplicationService {
         if (!now.isBefore(direction.getDeadline())) {
             throw new ConflictException("T1 has passed");
         }
-    }
-
-    private ApplicationResponse toResponse(Application application) {
-        return new ApplicationResponse(
-                application.getId(),
-                application.getParticipant().getId(),
-                application.getDirection().getId(),
-                application.getTitle(),
-                application.getAbstractText(),
-                application.getContent(),
-                application.getStatus(),
-                application.getCreatedAt(),
-                application.getUpdatedAt()
-        );
     }
 }
