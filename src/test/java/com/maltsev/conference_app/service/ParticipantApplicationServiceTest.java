@@ -34,7 +34,7 @@ import static org.mockito.Mockito.*;
  * вызывал ли сервис заглушку.
  */
 @ExtendWith(MockitoExtension.class)
-class ApplicationServiceTest {
+class ParticipantApplicationServiceTest {
     private static final Long OWNER_ID = 1L;
     private static final Long STRANGER_ID = 2L;
     private static final Long OPEN_DIRECTION_ID = 10L;
@@ -48,7 +48,7 @@ class ApplicationServiceTest {
     @Mock
     private DirectionRepository directionRepository;
 
-    private ApplicationService service;
+    private ParticipantApplicationService service;
 
     private User owner;
     private Direction openDirection;
@@ -56,7 +56,7 @@ class ApplicationServiceTest {
 
     @BeforeEach
     void setUp() {
-        service = new ApplicationService(applicationRepository, userRepository, directionRepository);
+        service = new ParticipantApplicationService(applicationRepository, userRepository, directionRepository);
         owner = TestData.participant(OWNER_ID);
         openDirection = TestData.openDirection(OPEN_DIRECTION_ID);
         closedDirection = TestData.closedDirection(CLOSED_DIRECTION_ID);

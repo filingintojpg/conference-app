@@ -8,7 +8,7 @@ import com.maltsev.conference_app.exception.ForbiddenException;
 import com.maltsev.conference_app.exception.GlobalExceptionHandler;
 import com.maltsev.conference_app.exception.NotFoundException;
 import com.maltsev.conference_app.model.ApplicationStatus;
-import com.maltsev.conference_app.service.ApplicationService;
+import com.maltsev.conference_app.service.ParticipantApplicationService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -32,17 +32,17 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * MockMvc "отправляет" запросы контроллеру прямо из теста, без настоящего сервера.
  */
 @ExtendWith(MockitoExtension.class)
-class ApplicationControllerTest {
+class ParticipantApplicationControllerTest {
     private static final String HEADER = "X-User-Id";
 
     @Mock
-    private ApplicationService service;
+    private ParticipantApplicationService service;
 
     private MockMvc mockMvc;
 
     @BeforeEach
     void setUp() {
-        mockMvc = MockMvcBuilders.standaloneSetup(new ApplicationController(service))
+        mockMvc = MockMvcBuilders.standaloneSetup(new com.maltsev.conference_app.controller.ParticipantApplicationService(service))
                 .setControllerAdvice(new GlobalExceptionHandler())
                 .build();
     }

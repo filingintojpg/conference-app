@@ -6,7 +6,6 @@ import com.maltsev.conference_app.dto.UpdateApplicationRequest;
 import com.maltsev.conference_app.model.Role;
 import com.maltsev.conference_app.security.RequiresRole;
 import com.maltsev.conference_app.security.UserHeader;
-import com.maltsev.conference_app.service.ApplicationService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
@@ -14,10 +13,10 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequestMapping("/applications")
 @RequiresRole(Role.PARTICIPANT)
-public class ApplicationController {
-    private final ApplicationService service;
+public class ParticipantApplicationService {
+    private final com.maltsev.conference_app.service.ParticipantApplicationService service;
 
-    public ApplicationController(ApplicationService service) {
+    public ParticipantApplicationService(com.maltsev.conference_app.service.ParticipantApplicationService service) {
         this.service = service;
     }
 

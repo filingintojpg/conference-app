@@ -19,14 +19,14 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.OffsetDateTime;
 
 @Service
-public class ApplicationService {
+public class ParticipantApplicationService {
     private final ApplicationRepository applicationRepository;
     private final UserRepository userRepository;
     private final DirectionRepository directionRepository;
 
-    public ApplicationService(ApplicationRepository applicationRepository,
-                              UserRepository userRepository,
-                              DirectionRepository directionRepository) {
+    public ParticipantApplicationService(ApplicationRepository applicationRepository,
+                                         UserRepository userRepository,
+                                         DirectionRepository directionRepository) {
         this.applicationRepository = applicationRepository;
         this.userRepository = userRepository;
         this.directionRepository = directionRepository;
