@@ -79,7 +79,7 @@ public class ParticipantApplicationService {
     }
 
     private void checkCanChange(Application application) {
-        if (application.getStatus() != ApplicationStatus.SUBMITTED) {
+        if (application.getStatus() == ApplicationStatus.WITHDRAWN) {
             throw new ConflictException("Application is already withdrawn");
         }
         checkDeadline(application.getDirection(), OffsetDateTime.now());
