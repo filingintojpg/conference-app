@@ -42,7 +42,7 @@ class ParticipantApplicationControllerTest {
 
     @BeforeEach
     void setUp() {
-        mockMvc = MockMvcBuilders.standaloneSetup(new com.maltsev.conference_app.controller.ParticipantApplicationService(service))
+        mockMvc = MockMvcBuilders.standaloneSetup(new ParticipantApplicationController(service))
                 .setControllerAdvice(new GlobalExceptionHandler())
                 .build();
     }

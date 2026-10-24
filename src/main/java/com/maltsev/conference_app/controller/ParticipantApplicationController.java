@@ -13,10 +13,10 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequestMapping("/applications")
 @RequiresRole(Role.PARTICIPANT)
-public class ParticipantApplicationService {
+public class ParticipantApplicationController {
     private final com.maltsev.conference_app.service.ParticipantApplicationService service;
 
-    public ParticipantApplicationService(com.maltsev.conference_app.service.ParticipantApplicationService service) {
+    public ParticipantApplicationController(com.maltsev.conference_app.service.ParticipantApplicationService service) {
         this.service = service;
     }
 
