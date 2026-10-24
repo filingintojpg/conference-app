@@ -1,7 +1,7 @@
 {
   "info": {
     "name": "iteration_2",
-    "description": "Run the whole collection in the given order (Collection Runner) on a FRESH database: docker compose down -v, then docker compose up --build. Ids are hard-coded: users 1-3 are participants, user 4 is the organizer of directions 1 and 2, user 5 is the organizer of direction 3. The 'normal' folder creates applications 1 and 2, edits application 1 and withdraws application 2, the 'errors' folder relies on that. Expected status is in square brackets in each name.",
+    "description": "Run the whole collection in the given order (Collection Runner) on a FRESH database: docker compose down -v, then docker compose up --build. Ids are hard-coded: users 1-3 are participants, user 4 is the organizer of directions 1 and 2, user 5 is the organizer of direction 3. The 'normal' folder creates applications 1 and 2, edits application 1 (its status becomes EDITED) and withdraws application 2, the 'errors' folder relies on that. GET /organizer/applications requires both directionId and status. Expected status is in square brackets in each name.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "item": [
@@ -131,7 +131,7 @@
           }
         },
         {
-          "name": "[200] organizer 4: all applications (1 and 2)",
+          "name": "[200] organizer 4: direction 1, status EDITED (application 1)",
           "request": {
             "method": "GET",
             "header": [
@@ -141,31 +141,7 @@
               }
             ],
             "url": {
-              "raw": "http://localhost:8080/organizer/applications",
-              "protocol": "http",
-              "host": [
-                "localhost"
-              ],
-              "port": "8080",
-              "path": [
-                "organizer",
-                "applications"
-              ]
-            }
-          }
-        },
-        {
-          "name": "[200] organizer 4: direction 1 only (application 1)",
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "X-User-Id",
-                "value": "4"
-              }
-            ],
-            "url": {
-              "raw": "http://localhost:8080/organizer/applications?directionId=1",
+              "raw": "http://localhost:8080/organizer/applications?directionId=1&status=EDITED",
               "protocol": "http",
               "host": [
                 "localhost"
@@ -179,13 +155,17 @@
                 {
                   "key": "directionId",
                   "value": "1"
+                },
+                {
+                  "key": "status",
+                  "value": "EDITED"
                 }
               ]
             }
           }
         },
         {
-          "name": "[200] organizer 4: status SUBMITTED (application 1)",
+          "name": "[200] organizer 4: direction 2, status WITHDRAWN (application 2)",
           "request": {
             "method": "GET",
             "header": [
@@ -195,7 +175,7 @@
               }
             ],
             "url": {
-              "raw": "http://localhost:8080/organizer/applications?status=SUBMITTED",
+              "raw": "http://localhost:8080/organizer/applications?directionId=2&status=WITHDRAWN",
               "protocol": "http",
               "host": [
                 "localhost"
@@ -206,6 +186,44 @@
                 "applications"
               ],
               "query": [
+                {
+                  "key": "directionId",
+                  "value": "2"
+                },
+                {
+                  "key": "status",
+                  "value": "WITHDRAWN"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "[200] organizer 4: direction 1, status SUBMITTED (empty list)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-User-Id",
+                "value": "4"
+              }
+            ],
+            "url": {
+              "raw": "http://localhost:8080/organizer/applications?directionId=1&status=SUBMITTED",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "8080",
+              "path": [
+                "organizer",
+                "applications"
+              ],
+              "query": [
+                {
+                  "key": "directionId",
+                  "value": "1"
+                },
                 {
                   "key": "status",
                   "value": "SUBMITTED"
@@ -215,7 +233,7 @@
           }
         },
         {
-          "name": "[200] organizer 4: status WITHDRAWN (application 2)",
+          "name": "[200] organizer 4: direction 2, status SUBMITTED (empty list)",
           "request": {
             "method": "GET",
             "header": [
@@ -225,7 +243,7 @@
               }
             ],
             "url": {
-              "raw": "http://localhost:8080/organizer/applications?status=WITHDRAWN",
+              "raw": "http://localhost:8080/organizer/applications?directionId=2&status=SUBMITTED",
               "protocol": "http",
               "host": [
                 "localhost"
@@ -237,8 +255,12 @@
               ],
               "query": [
                 {
+                  "key": "directionId",
+                  "value": "2"
+                },
+                {
                   "key": "status",
-                  "value": "WITHDRAWN"
+                  "value": "SUBMITTED"
                 }
               ]
             }
@@ -270,7 +292,7 @@
           }
         },
         {
-          "name": "[200] organizer 5: no applications (empty list)",
+          "name": "[200] organizer 5: direction 3, status SUBMITTED (empty list)",
           "request": {
             "method": "GET",
             "header": [
@@ -280,7 +302,7 @@
               }
             ],
             "url": {
-              "raw": "http://localhost:8080/organizer/applications",
+              "raw": "http://localhost:8080/organizer/applications?directionId=3&status=SUBMITTED",
               "protocol": "http",
               "host": [
                 "localhost"
@@ -289,6 +311,16 @@
               "path": [
                 "organizer",
                 "applications"
+              ],
+              "query": [
+                {
+                  "key": "directionId",
+                  "value": "3"
+                },
+                {
+                  "key": "status",
+                  "value": "SUBMITTED"
+                }
               ]
             }
           }
@@ -304,7 +336,7 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "http://localhost:8080/organizer/applications",
+              "raw": "http://localhost:8080/organizer/applications?directionId=1&status=SUBMITTED",
               "protocol": "http",
               "host": [
                 "localhost"
@@ -313,6 +345,110 @@
               "path": [
                 "organizer",
                 "applications"
+              ],
+              "query": [
+                {
+                  "key": "directionId",
+                  "value": "1"
+                },
+                {
+                  "key": "status",
+                  "value": "SUBMITTED"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "[400] directionId is missing",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-User-Id",
+                "value": "4"
+              }
+            ],
+            "url": {
+              "raw": "http://localhost:8080/organizer/applications?status=SUBMITTED",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "8080",
+              "path": [
+                "organizer",
+                "applications"
+              ],
+              "query": [
+                {
+                  "key": "status",
+                  "value": "SUBMITTED"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "[400] status is missing",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-User-Id",
+                "value": "4"
+              }
+            ],
+            "url": {
+              "raw": "http://localhost:8080/organizer/applications?directionId=1",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "8080",
+              "path": [
+                "organizer",
+                "applications"
+              ],
+              "query": [
+                {
+                  "key": "directionId",
+                  "value": "1"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "[400] directionId is not a number",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-User-Id",
+                "value": "4"
+              }
+            ],
+            "url": {
+              "raw": "http://localhost:8080/organizer/applications?directionId=abc&status=SUBMITTED",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "8080",
+              "path": [
+                "organizer",
+                "applications"
+              ],
+              "query": [
+                {
+                  "key": "directionId",
+                  "value": "abc"
+                },
+                {
+                  "key": "status",
+                  "value": "SUBMITTED"
+                }
               ]
             }
           }
@@ -328,7 +464,7 @@
               }
             ],
             "url": {
-              "raw": "http://localhost:8080/organizer/applications?status=UNKNOWN",
+              "raw": "http://localhost:8080/organizer/applications?directionId=1&status=UNKNOWN",
               "protocol": "http",
               "host": [
                 "localhost"
@@ -339,6 +475,10 @@
                 "applications"
               ],
               "query": [
+                {
+                  "key": "directionId",
+                  "value": "1"
+                },
                 {
                   "key": "status",
                   "value": "UNKNOWN"
@@ -358,7 +498,7 @@
               }
             ],
             "url": {
-              "raw": "http://localhost:8080/organizer/applications",
+              "raw": "http://localhost:8080/organizer/applications?directionId=1&status=SUBMITTED",
               "protocol": "http",
               "host": [
                 "localhost"
@@ -367,6 +507,16 @@
               "path": [
                 "organizer",
                 "applications"
+              ],
+              "query": [
+                {
+                  "key": "directionId",
+                  "value": "1"
+                },
+                {
+                  "key": "status",
+                  "value": "SUBMITTED"
+                }
               ]
             }
           }
@@ -382,7 +532,7 @@
               }
             ],
             "url": {
-              "raw": "http://localhost:8080/organizer/applications?directionId=999",
+              "raw": "http://localhost:8080/organizer/applications?directionId=999&status=SUBMITTED",
               "protocol": "http",
               "host": [
                 "localhost"
@@ -396,6 +546,10 @@
                 {
                   "key": "directionId",
                   "value": "999"
+                },
+                {
+                  "key": "status",
+                  "value": "SUBMITTED"
                 }
               ]
             }
@@ -437,7 +591,7 @@
               }
             ],
             "url": {
-              "raw": "http://localhost:8080/organizer/applications",
+              "raw": "http://localhost:8080/organizer/applications?directionId=1&status=SUBMITTED",
               "protocol": "http",
               "host": [
                 "localhost"
@@ -446,6 +600,16 @@
               "path": [
                 "organizer",
                 "applications"
+              ],
+              "query": [
+                {
+                  "key": "directionId",
+                  "value": "1"
+                },
+                {
+                  "key": "status",
+                  "value": "SUBMITTED"
+                }
               ]
             }
           }
@@ -493,7 +657,7 @@
               }
             ],
             "url": {
-              "raw": "http://localhost:8080/organizer/applications?directionId=3",
+              "raw": "http://localhost:8080/organizer/applications?directionId=3&status=SUBMITTED",
               "protocol": "http",
               "host": [
                 "localhost"
@@ -507,6 +671,10 @@
                 {
                   "key": "directionId",
                   "value": "3"
+                },
+                {
+                  "key": "status",
+                  "value": "SUBMITTED"
                 }
               ]
             }
