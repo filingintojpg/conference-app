@@ -1,8 +1,12 @@
 CREATE TABLE users (
     id BIGSERIAL PRIMARY KEY,
-    full_name VARCHAR(200) NOT NULL,
-    email VARCHAR(320) NOT NULL UNIQUE,
+    last_name VARCHAR(100) NOT NULL,
+    first_name VARCHAR(100) NOT NULL,
+    middle_name VARCHAR(100),
+    email_local VARCHAR(64) NOT NULL,
+    email_domain VARCHAR(255) NOT NULL,
     role VARCHAR(30) NOT NULL,
+    CONSTRAINT users_email_uq UNIQUE (email_local, email_domain),
     CONSTRAINT users_role_chk CHECK (role IN ('PARTICIPANT', 'ORGANIZER')),
     CONSTRAINT users_id_role_uq UNIQUE (id, role)
 );
