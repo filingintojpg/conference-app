@@ -1,0 +1,543 @@
+{
+  "info": {
+    "name": "iteration_2",
+    "description": "Run the whole collection in the given order (Collection Runner) on a FRESH database: docker compose down -v, then docker compose up --build. Ids are hard-coded: users 1-3 are participants, user 4 is the organizer of directions 1 and 2, user 5 is the organizer of direction 3. The 'normal' folder creates applications 1 and 2, edits application 1 and withdraws application 2, the 'errors' folder relies on that. Expected status is in square brackets in each name.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "normal",
+      "item": [
+        {
+          "name": "[201] create: participant 1, direction 1 (id 1)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-User-Id",
+                "value": "1"
+              }
+            ],
+            "url": {
+              "raw": "http://localhost:8080/applications",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "8080",
+              "path": [
+                "applications"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"directionId\": 1,\n  \"title\": \"First application\",\n  \"abstractText\": \"Application abstract\",\n  \"content\": \"Application content\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "[201] create: participant 2, direction 2 (id 2)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-User-Id",
+                "value": "2"
+              }
+            ],
+            "url": {
+              "raw": "http://localhost:8080/applications",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "8080",
+              "path": [
+                "applications"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"directionId\": 2,\n  \"title\": \"Second application\",\n  \"abstractText\": \"Application abstract\",\n  \"content\": \"Application content\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "[200] update: application 1",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "X-User-Id",
+                "value": "1"
+              }
+            ],
+            "url": {
+              "raw": "http://localhost:8080/applications/1",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "8080",
+              "path": [
+                "applications",
+                "1"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Updated title\",\n  \"abstractText\": \"Updated abstract\",\n  \"content\": \"Updated content\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "[200] withdraw: application 2",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-User-Id",
+                "value": "2"
+              }
+            ],
+            "url": {
+              "raw": "http://localhost:8080/applications/2/withdraw",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "8080",
+              "path": [
+                "applications",
+                "2",
+                "withdraw"
+              ]
+            }
+          }
+        },
+        {
+          "name": "[200] organizer 4: all applications (1 and 2)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-User-Id",
+                "value": "4"
+              }
+            ],
+            "url": {
+              "raw": "http://localhost:8080/organizer/applications",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "8080",
+              "path": [
+                "organizer",
+                "applications"
+              ]
+            }
+          }
+        },
+        {
+          "name": "[200] organizer 4: direction 1 only (application 1)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-User-Id",
+                "value": "4"
+              }
+            ],
+            "url": {
+              "raw": "http://localhost:8080/organizer/applications?directionId=1",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "8080",
+              "path": [
+                "organizer",
+                "applications"
+              ],
+              "query": [
+                {
+                  "key": "directionId",
+                  "value": "1"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "[200] organizer 4: status SUBMITTED (application 1)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-User-Id",
+                "value": "4"
+              }
+            ],
+            "url": {
+              "raw": "http://localhost:8080/organizer/applications?status=SUBMITTED",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "8080",
+              "path": [
+                "organizer",
+                "applications"
+              ],
+              "query": [
+                {
+                  "key": "status",
+                  "value": "SUBMITTED"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "[200] organizer 4: status WITHDRAWN (application 2)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-User-Id",
+                "value": "4"
+              }
+            ],
+            "url": {
+              "raw": "http://localhost:8080/organizer/applications?status=WITHDRAWN",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "8080",
+              "path": [
+                "organizer",
+                "applications"
+              ],
+              "query": [
+                {
+                  "key": "status",
+                  "value": "WITHDRAWN"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "[200] organizer 4: application 1",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-User-Id",
+                "value": "4"
+              }
+            ],
+            "url": {
+              "raw": "http://localhost:8080/organizer/applications/1",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "8080",
+              "path": [
+                "organizer",
+                "applications",
+                "1"
+              ]
+            }
+          }
+        },
+        {
+          "name": "[200] organizer 5: no applications (empty list)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-User-Id",
+                "value": "5"
+              }
+            ],
+            "url": {
+              "raw": "http://localhost:8080/organizer/applications",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "8080",
+              "path": [
+                "organizer",
+                "applications"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "errors",
+      "item": [
+        {
+          "name": "[400] header X-User-Id is missing",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:8080/organizer/applications",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "8080",
+              "path": [
+                "organizer",
+                "applications"
+              ]
+            }
+          }
+        },
+        {
+          "name": "[400] invalid status",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-User-Id",
+                "value": "4"
+              }
+            ],
+            "url": {
+              "raw": "http://localhost:8080/organizer/applications?status=UNKNOWN",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "8080",
+              "path": [
+                "organizer",
+                "applications"
+              ],
+              "query": [
+                {
+                  "key": "status",
+                  "value": "UNKNOWN"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "[404] organizer not found",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-User-Id",
+                "value": "999"
+              }
+            ],
+            "url": {
+              "raw": "http://localhost:8080/organizer/applications",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "8080",
+              "path": [
+                "organizer",
+                "applications"
+              ]
+            }
+          }
+        },
+        {
+          "name": "[404] direction not found",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-User-Id",
+                "value": "4"
+              }
+            ],
+            "url": {
+              "raw": "http://localhost:8080/organizer/applications?directionId=999",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "8080",
+              "path": [
+                "organizer",
+                "applications"
+              ],
+              "query": [
+                {
+                  "key": "directionId",
+                  "value": "999"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "[404] application not found",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-User-Id",
+                "value": "4"
+              }
+            ],
+            "url": {
+              "raw": "http://localhost:8080/organizer/applications/999",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "8080",
+              "path": [
+                "organizer",
+                "applications",
+                "999"
+              ]
+            }
+          }
+        },
+        {
+          "name": "[403] participant 1 cannot use organizer endpoints",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-User-Id",
+                "value": "1"
+              }
+            ],
+            "url": {
+              "raw": "http://localhost:8080/organizer/applications",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "8080",
+              "path": [
+                "organizer",
+                "applications"
+              ]
+            }
+          }
+        },
+        {
+          "name": "[403] organizer 4 cannot create applications",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-User-Id",
+                "value": "4"
+              }
+            ],
+            "url": {
+              "raw": "http://localhost:8080/applications",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "8080",
+              "path": [
+                "applications"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"directionId\": 1,\n  \"title\": \"Test title\",\n  \"abstractText\": \"Application abstract\",\n  \"content\": \"Application content\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "[403] direction 3 belongs to organizer 5",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-User-Id",
+                "value": "4"
+              }
+            ],
+            "url": {
+              "raw": "http://localhost:8080/organizer/applications?directionId=3",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "8080",
+              "path": [
+                "organizer",
+                "applications"
+              ],
+              "query": [
+                {
+                  "key": "directionId",
+                  "value": "3"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "[403] application 1 belongs to direction of organizer 4",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-User-Id",
+                "value": "5"
+              }
+            ],
+            "url": {
+              "raw": "http://localhost:8080/organizer/applications/1",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "8080",
+              "path": [
+                "organizer",
+                "applications",
+                "1"
+              ]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

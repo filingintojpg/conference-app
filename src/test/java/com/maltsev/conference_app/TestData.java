@@ -40,7 +40,12 @@ public final class TestData {
     }
 
     public static Direction direction(Long id, OffsetDateTime deadline) {
-        Direction direction = new Direction("Programming", deadline, organizer(100L));
+        return direction(id, deadline, organizer(100L));
+    }
+
+    /** Направление с заданным организатором. */
+    public static Direction direction(Long id, OffsetDateTime deadline, User organizer) {
+        Direction direction = new Direction("Programming", deadline, organizer);
         ReflectionTestUtils.setField(direction, "id", id);
         return direction;
     }
