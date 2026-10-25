@@ -27,13 +27,15 @@
       <option value="create">Подать заявку</option>
       <option value="update">Обновить заявку</option>
       <option value="withdraw">Отозвать заявку</option>
+      <option value="organizerList">Организатор: список заявок</option>
+      <option value="organizerGet">Организатор: одна заявка</option>
     </select>
   </label>
 
   <form id="create">
-    <label>ID участника (X-Participant-Id)
+    <label>ID участника (X-User-Id)
       <input type="number" name="participantId" required>
-      <small>В тестовых данных: 1, 2, 3</small>
+      <small>Участники в тестовых данных: 1, 2, 3</small>
     </label>
     <label>ID направления
       <input type="number" name="directionId" required>
@@ -46,7 +48,7 @@
   </form>
 
   <form id="update" hidden>
-    <label>ID участника (X-Participant-Id)
+    <label>ID участника (X-User-Id)
       <input type="number" name="participantId" required>
     </label>
     <label>ID заявки <input type="number" name="id" required></label>
@@ -57,11 +59,35 @@
   </form>
 
   <form id="withdraw" hidden>
-    <label>ID участника (X-Participant-Id)
+    <label>ID участника (X-User-Id)
       <input type="number" name="participantId" required>
     </label>
     <label>ID заявки <input type="number" name="id" required></label>
     <button type="submit">Отозвать</button>
+  </form>
+
+  <form id="organizerList" hidden>
+    <label>ID организатора (X-User-Id)
+      <input type="number" name="organizerId" required>
+      <small>В тестовых данных: 4 (направления 1 и 2), 5 (направление 3)</small>
+    </label>
+    <label>ID направления (необязательно) <input type="number" name="directionId"></label>
+    <label>Статус
+      <select name="status">
+        <option value="">Любой</option>
+        <option value="SUBMITTED">SUBMITTED (действующие)</option>
+        <option value="WITHDRAWN">WITHDRAWN (отозванные)</option>
+      </select>
+    </label>
+    <button type="submit">Показать</button>
+  </form>
+
+  <form id="organizerGet" hidden>
+    <label>ID организатора (X-User-Id)
+      <input type="number" name="organizerId" required>
+    </label>
+    <label>ID заявки <input type="number" name="id" required></label>
+    <button type="submit">Показать</button>
   </form>
 
   <h3>Ответ</h3>
@@ -73,6 +99,8 @@
     create: document.getElementById('create'),
     update: document.getElementById('update'),
     withdraw: document.getElementById('withdraw'),
+    organizerList: document.getElementById('organizerList'),
+    organizerGet: document.getElementById('organizerGet'),
   };
   const out = document.getElementById('response');
 
@@ -85,8 +113,8 @@
     out.className = cls;
   }
 
-  async function send(url, method, participantId, body) {
-    const headers = { 'X-Participant-Id': participantId };
+  async function send(url, method, userId, body) {
+    const headers = { 'X-User-Id': userId };
     if (body) headers['Content-Type'] = 'application/json';
     try {
       const res = await fetch(url, { method, headers, body: body && JSON.stringify(body) });
@@ -124,6 +152,22 @@
     e.preventDefault();
     const f = e.target;
     send('/applications/' + f.id.value + '/withdraw', 'POST', f.participantId.value);
+  });
+
+  forms.organizerList.addEventListener('submit', e => {
+    e.preventDefault();
+    const f = e.target;
+    const params = new URLSearchParams();
+    if (f.directionId.value) params.set('directionId', f.directionId.value);
+    if (f.status.value) params.set('status', f.status.value);
+    const query = params.toString();
+    send('/organizer/applications' + (query ? '?' + query : ''), 'GET', f.organizerId.value);
+  });
+
+  forms.organizerGet.addEventListener('submit', e => {
+    e.preventDefault();
+    const f = e.target;
+    send('/organizer/applications/' + f.id.value, 'GET', f.organizerId.value);
   });
 </script>
 </body>
