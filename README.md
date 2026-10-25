@@ -1,7 +1,9 @@
 # Conference App
 
-### Requirements
+## Requirements
 - Docker and Docker Compose
+
+## Run instruction
 
 ### Build
 
@@ -15,7 +17,7 @@ cp .env.example .env && docker compose up --build
 docker compose up
 ```
 
-Application: `http://localhost:8080`
+Backend: `http://localhost:8080`, frontend: `http://localhost:5173`
 
 ### Stop
 
@@ -31,7 +33,33 @@ docker compose down -v
 
 ## API endpoints
 
+### Common
+
+#### GET `/directions` - List of directions.
+
+```text
+GET /directions
+```
+
+#### GET `/users` - List of users (optional role filter).
+
+```text
+GET /users?role=ORGANIZER
+```
+
+#### GET `/application-statuses` - List of possible application statuses.
+
+```text
+GET /application-statuses
+```
+
 ### Participant
+
+#### GET `/applications` - List of the participant's applications.
+
+```text
+GET /applications
+```
 
 #### POST `/applications` - Create an application.
 
