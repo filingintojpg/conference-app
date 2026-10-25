@@ -17,6 +17,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.OffsetDateTime;
+import java.util.List;
 
 @Service
 public class ParticipantApplicationService {
@@ -30,6 +31,11 @@ public class ParticipantApplicationService {
         this.applicationRepository = applicationRepository;
         this.userRepository = userRepository;
         this.directionRepository = directionRepository;
+    }
+
+    @Transactional(readOnly = true)
+    public List<ApplicationResponse> list(Long participantId) {
+        return applicationRepository.findByParticipantIdOrderByIdDesc(participantId).stream().map(ApplicationResponse::from).toList();
     }
 
     @Transactional

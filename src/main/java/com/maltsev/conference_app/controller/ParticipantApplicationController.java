@@ -10,6 +10,8 @@ import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 @RestController
 @RequestMapping("/applications")
 @RequiresRole(Role.PARTICIPANT)
@@ -18,6 +20,11 @@ public class ParticipantApplicationController {
 
     public ParticipantApplicationController(com.maltsev.conference_app.service.ParticipantApplicationService service) {
         this.service = service;
+    }
+
+    @GetMapping
+    public List<ApplicationResponse> list(@RequestHeader(UserHeader.NAME) Long participantId) {
+        return service.list(participantId);
     }
 
     @PostMapping
