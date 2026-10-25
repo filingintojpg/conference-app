@@ -1,0 +1,23 @@
+.field {
+  display: block;
+}
+
+.field__label {
+  display: block;
+  margin-bottom: 4px;
+  font-size: 14px;
+  color: var(--color-muted);
+}
+
+.field__control {
+  width: 100%;
+  padding: 6px;
+  font: inherit;
+}
+
+.field__error {
+  display: block;
+  margin-top: 4px;
+  font-size: 13px;
+  color: var(--color-danger);
+}

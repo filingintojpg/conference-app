@@ -1,0 +1,14 @@
+.organizer-page {
+  max-width: 800px;
+}
+
+.organizer-page__filters {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--gap);
+  margin-bottom: var(--gap);
+}
+
+.organizer-page > * + * {
+  margin-top: var(--gap);
+}

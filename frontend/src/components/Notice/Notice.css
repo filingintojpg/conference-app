@@ -1,0 +1,13 @@
+.notice {
+  padding: 8px 12px;
+  border-left: 4px solid var(--color-border);
+  background: var(--color-bg-soft);
+}
+
+.notice--error {
+  border-color: var(--color-danger);
+}
+
+.notice--success {
+  border-color: var(--color-success);
+}

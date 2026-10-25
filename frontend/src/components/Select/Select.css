@@ -1,0 +1,23 @@
+.select {
+  display: block;
+}
+
+.select__label {
+  display: block;
+  margin-bottom: 4px;
+  font-size: 14px;
+  color: var(--color-muted);
+}
+
+.select__control {
+  width: 100%;
+  padding: 6px;
+  font: inherit;
+}
+
+.select__error {
+  display: block;
+  margin-top: 4px;
+  font-size: 13px;
+  color: var(--color-danger);
+}

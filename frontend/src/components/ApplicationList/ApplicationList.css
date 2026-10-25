@@ -1,0 +1,9 @@
+.application-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap);
+}
+
+.application-list__empty {
+  color: var(--color-muted);
+}

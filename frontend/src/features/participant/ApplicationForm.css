@@ -1,0 +1,10 @@
+.application-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap);
+}
+
+.application-form__actions {
+  display: flex;
+  gap: 8px;
+}

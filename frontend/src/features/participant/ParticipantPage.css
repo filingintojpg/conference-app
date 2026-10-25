@@ -1,0 +1,16 @@
+.participant-page {
+  display: grid;
+  grid-template-columns: minmax(300px, 1fr) minmax(300px, 1.2fr);
+  gap: 24px;
+  align-items: start;
+}
+
+.participant-page__list > * + * {
+  margin-top: var(--gap);
+}
+
+@media (max-width: 800px) {
+  .participant-page {
+    grid-template-columns: 1fr;
+  }
+}

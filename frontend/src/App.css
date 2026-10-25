@@ -1,0 +1,19 @@
+.app {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 16px;
+}
+
+.app__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: var(--gap);
+  padding-bottom: var(--gap);
+  margin-bottom: 20px;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.app__title {
+  margin: 0;
+}
