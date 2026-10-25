@@ -85,6 +85,30 @@ class ParticipantApplicationControllerTest {
     }
 
     // =====================================================================
+    //  GET /applications
+    // =====================================================================
+
+    @Test
+    void list_returnsOwnApplications() throws Exception {
+        when(service.list(1L)).thenReturn(java.util.List.of(response(ApplicationStatus.SUBMITTED)));
+
+        mockMvc.perform(get("/applications").header(HEADER, "1"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(1))
+                .andExpect(jsonPath("$[0].id").value(100))
+                .andExpect(jsonPath("$[0].participantId").value(1));
+    }
+
+    @Test
+    void list_withoutHeader_returns400() throws Exception {
+        mockMvc.perform(get("/applications"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error").value("Header X-User-Id is required"));
+
+        verifyNoInteractions(service);
+    }
+
+    // =====================================================================
     //  POST /applications
     // =====================================================================
 
@@ -325,8 +349,8 @@ class ParticipantApplicationControllerTest {
     }
 
     @Test
-    void create_getMethodIsNotAllowed_returns405() throws Exception {
-        mockMvc.perform(get("/applications").header(HEADER, "1"))
+    void applications_deleteMethodIsNotAllowed_returns405() throws Exception {
+        mockMvc.perform(delete("/applications").header(HEADER, "1"))
                 .andExpect(status().isMethodNotAllowed());
 
         verifyNoInteractions(service);
