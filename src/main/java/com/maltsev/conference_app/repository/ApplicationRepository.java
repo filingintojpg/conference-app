@@ -8,4 +8,6 @@ import java.util.List;
 
 public interface ApplicationRepository extends JpaRepository<Application, Long> {
     List<Application> findByDirectionIdAndStatusOrderById(Long directionId, ApplicationStatus status);
+
+    List<Application> findByParticipantIdOrderByIdDesc(Long participantId);
 }
