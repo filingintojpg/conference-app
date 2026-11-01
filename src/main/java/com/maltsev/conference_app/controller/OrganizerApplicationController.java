@@ -2,6 +2,7 @@ package com.maltsev.conference_app.controller;
 
 import com.maltsev.conference_app.dto.ApplicationResponse;
 import com.maltsev.conference_app.model.ApplicationStatus;
+import com.maltsev.conference_app.model.ReviewStatus;
 import com.maltsev.conference_app.model.Role;
 import com.maltsev.conference_app.security.RequiresRole;
 import com.maltsev.conference_app.security.UserHeader;
@@ -23,13 +24,26 @@ public class OrganizerApplicationController {
     @GetMapping
     public List<ApplicationResponse> list(@RequestHeader(UserHeader.NAME) Long organizerId,
                                                    @RequestParam Long directionId,
-                                                   @RequestParam ApplicationStatus status) {
-        return service.list(organizerId, directionId, status);
+                                                   @RequestParam(required = false) ApplicationStatus status,
+                                                   @RequestParam(required = false) ReviewStatus reviewStatus) {
+        return service.list(organizerId, directionId, status, reviewStatus);
     }
 
     @GetMapping("/{id}")
     public ApplicationResponse get(@PathVariable Long id,
                                             @RequestHeader(UserHeader.NAME) Long organizerId) {
         return service.get(id, organizerId);
+    }
+
+    @PostMapping("/{id}/approve")
+    public ApplicationResponse approve(@PathVariable Long id,
+                                       @RequestHeader(UserHeader.NAME) Long organizerId) {
+        return service.approve(id, organizerId);
+    }
+
+    @PostMapping("/{id}/reject")
+    public ApplicationResponse reject(@PathVariable Long id,
+                                      @RequestHeader(UserHeader.NAME) Long organizerId) {
+        return service.reject(id, organizerId);
     }
 }
