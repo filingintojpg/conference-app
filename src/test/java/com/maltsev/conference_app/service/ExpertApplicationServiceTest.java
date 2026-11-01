@@ -2,7 +2,7 @@ package com.maltsev.conference_app.service;
 
 import com.maltsev.conference_app.TestData;
 import com.maltsev.conference_app.dto.ExpertApplicationResponse;
-import com.maltsev.conference_app.exception.NotFoundException;
+import com.maltsev.conference_app.exception.ForbiddenException;
 import com.maltsev.conference_app.model.Application;
 import com.maltsev.conference_app.model.ApplicationStatus;
 import com.maltsev.conference_app.model.Direction;
@@ -16,6 +16,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.List;
+import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
@@ -23,6 +24,7 @@ import static org.mockito.Mockito.*;
 @ExtendWith(MockitoExtension.class)
 class ExpertApplicationServiceTest {
     private static final Long DIRECTION_ID = 10L;
+    private static final Long EXPERT_ID = 7L;
 
     @Mock
     private ApplicationRepository applicationRepository;
@@ -30,42 +32,35 @@ class ExpertApplicationServiceTest {
     private DirectionRepository directionRepository;
 
     private ExpertApplicationService service;
+    private Direction direction;
     private Application application;
 
     @BeforeEach
     void setUp() {
         service = new ExpertApplicationService(applicationRepository, directionRepository);
-        Direction direction = TestData.openDirection(DIRECTION_ID);
+        direction = TestData.openDirection(DIRECTION_ID);
         application = TestData.application(5L, TestData.participant(1L), direction);
         application.approve();
     }
 
     @Test
-    void list_withoutDirection_asksForApprovedNotWithdrawnOfAllDirections() {
-        when(applicationRepository.findByReviewStatusAndStatusNotOrderById(
-                ReviewStatus.APPROVED, ApplicationStatus.WITHDRAWN)).thenReturn(List.of(application));
-
-        List<ExpertApplicationResponse> result = service.list(null);
-
-        assertEquals(1, result.size());
-        assertEquals(5L, result.get(0).id());
-        verifyNoInteractions(directionRepository);
-    }
-
-    @Test
-    void list_withDirection_filtersByDirection() {
-        when(directionRepository.existsById(DIRECTION_ID)).thenReturn(true);
+    void list_returnsApprovedNotWithdrawnApplicationsOfExpertsDirectionOnly() {
+        when(directionRepository.findByExpertId(EXPERT_ID)).thenReturn(Optional.of(direction));
         when(applicationRepository.findByDirectionIdAndReviewStatusAndStatusNotOrderById(
                 DIRECTION_ID, ReviewStatus.APPROVED, ApplicationStatus.WITHDRAWN)).thenReturn(List.of(application));
 
-        assertEquals(1, service.list(DIRECTION_ID).size());
+        List<ExpertApplicationResponse> result = service.list(EXPERT_ID);
+
+        assertEquals(1, result.size());
+        assertEquals(5L, result.get(0).id());
+        verifyNoMoreInteractions(applicationRepository);
     }
 
     @Test
-    void list_unknownDirection_throwsNotFound() {
-        when(directionRepository.existsById(99L)).thenReturn(false);
+    void list_expertWithoutDirection_throwsForbidden() {
+        when(directionRepository.findByExpertId(EXPERT_ID)).thenReturn(Optional.empty());
 
-        assertThrows(NotFoundException.class, () -> service.list(99L));
+        assertThrows(ForbiddenException.class, () -> service.list(EXPERT_ID));
         verifyNoInteractions(applicationRepository);
     }
 

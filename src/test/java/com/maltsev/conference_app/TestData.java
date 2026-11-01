@@ -39,13 +39,24 @@ public final class TestData {
         return organizer;
     }
 
+    public static User expert(Long id) {
+        User expert = new User("Kuznetsov", "Alexey", "Viktorovich", "alexey", "example.com", Role.EXPERT);
+        ReflectionTestUtils.setField(expert, "id", id);
+        return expert;
+    }
+
     public static Direction direction(Long id, OffsetDateTime deadline) {
         return direction(id, deadline, organizer(100L));
     }
 
     /** Направление с заданным организатором. */
     public static Direction direction(Long id, OffsetDateTime deadline, User organizer) {
-        Direction direction = new Direction("Programming", deadline, organizer);
+        return direction(id, deadline, organizer, null);
+    }
+
+    /** Направление с заданными организатором и экспертом. */
+    public static Direction direction(Long id, OffsetDateTime deadline, User organizer, User expert) {
+        Direction direction = new Direction("Programming", deadline, organizer, expert);
         ReflectionTestUtils.setField(direction, "id", id);
         return direction;
     }

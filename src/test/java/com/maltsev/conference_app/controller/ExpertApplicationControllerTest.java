@@ -1,8 +1,9 @@
 package com.maltsev.conference_app.controller;
 
 import com.maltsev.conference_app.dto.ExpertApplicationResponse;
+import com.maltsev.conference_app.exception.ForbiddenException;
 import com.maltsev.conference_app.exception.GlobalExceptionHandler;
-import com.maltsev.conference_app.exception.NotFoundException;
+import com.maltsev.conference_app.security.UserHeader;
 import com.maltsev.conference_app.service.ExpertApplicationService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -43,10 +44,10 @@ class ExpertApplicationControllerTest {
     }
 
     @Test
-    void list_withoutDirection_returnsAllAndHasNoAuthorFields() throws Exception {
-        when(service.list(null)).thenReturn(List.of(response(1L)));
+    void list_returnsApplicationsAndHasNoAuthorFields() throws Exception {
+        when(service.list(7L)).thenReturn(List.of(response(1L)));
 
-        mockMvc.perform(get(URL))
+        mockMvc.perform(get(URL).header(UserHeader.NAME, "7"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].id").value(1))
                 .andExpect(jsonPath("$[0].title").value("Spring Boot"))
@@ -56,27 +57,43 @@ class ExpertApplicationControllerTest {
     }
 
     @Test
-    void list_withDirection_passesItToService() throws Exception {
-        when(service.list(10L)).thenReturn(List.of());
+    void list_passesHeaderToService() throws Exception {
+        when(service.list(7L)).thenReturn(List.of());
 
-        mockMvc.perform(get(URL).param("directionId", "10"))
+        mockMvc.perform(get(URL).header(UserHeader.NAME, "7"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$").isEmpty());
 
-        verify(service).list(10L);
+        verify(service).list(7L);
     }
 
     @Test
-    void list_unknownDirection_returns404() throws Exception {
-        when(service.list(99L)).thenThrow(new NotFoundException("Direction not found: 99"));
+    void list_directionIdParameterIsIgnored() throws Exception {
+        when(service.list(7L)).thenReturn(List.of());
 
-        mockMvc.perform(get(URL).param("directionId", "99"))
-                .andExpect(status().isNotFound());
+        mockMvc.perform(get(URL).header(UserHeader.NAME, "7").param("directionId", "99"))
+                .andExpect(status().isOk());
+
+        verify(service).list(7L);
     }
 
     @Test
-    void list_directionIdIsNotANumber_returns400() throws Exception {
-        mockMvc.perform(get(URL).param("directionId", "abc"))
+    void list_missingHeader_returns400() throws Exception {
+        mockMvc.perform(get(URL))
                 .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void list_headerIsNotANumber_returns400() throws Exception {
+        mockMvc.perform(get(URL).header(UserHeader.NAME, "abc"))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void list_expertWithoutDirection_returns403() throws Exception {
+        when(service.list(7L)).thenThrow(new ForbiddenException("Expert is not assigned to a direction"));
+
+        mockMvc.perform(get(URL).header(UserHeader.NAME, "7"))
+                .andExpect(status().isForbidden());
     }
 }
