@@ -88,6 +88,18 @@ GET /organizer/applications?directionId=1&status=SUBMITTED&reviewStatus=PENDING
 
 #### POST `/organizer/applications/{id}/reject` - Application did not pass the review.
 
+#### POST `/organizer/applications/{id}/transfer` - Transfer an unreviewed application to another direction.
+
+```json
+{
+  "targetDirectionId": 2
+}
+```
+
+#### POST `/organizer/applications/{id}/transfer/accept` - Accept the application into direction.
+
+#### POST `/organizer/applications/{id}/transfer/reject` - Decline the transfer, the application stays in the source direction.
+
 ### Expert committee member
 
 #### GET `/expert/applications` - Approved applications of the expert's direction, without author data.
