@@ -272,4 +272,96 @@ class ApplicationTest {
 
         assertEquals(ReviewStatus.APPROVED, application.getReviewStatus());
     }
+
+    // ---------- передача на другое направление ----------
+
+    private Direction otherDirection() {
+        return TestData.openDirection(20L);
+    }
+
+    @Test
+    void constructor_hasNoTransfer() {
+        Application application = newApplication();
+
+        assertFalse(application.isTransferPending());
+        assertNull(application.getTransferTo());
+        assertNull(application.getTransferredFrom());
+    }
+
+    @Test
+    void requestTransfer_remembersSourceAndTargetButKeepsDirection() {
+        Application application = newApplication();
+        Direction target = otherDirection();
+
+        application.requestTransfer(target);
+
+        assertTrue(application.isTransferPending());
+        assertSame(target, application.getTransferTo());
+        assertSame(direction, application.getTransferredFrom());
+        assertSame(direction, application.getDirection());
+    }
+
+    @Test
+    void requestTransfer_movesUpdatedAtForward() {
+        Application application = newApplication();
+        OffsetDateTime updatedBefore = application.getUpdatedAt();
+        pause();
+
+        application.requestTransfer(otherDirection());
+
+        assertTrue(application.getUpdatedAt().isAfter(updatedBefore));
+    }
+
+    @Test
+    void acceptTransfer_movesApplicationToTargetAndKeepsSource() {
+        Application application = newApplication();
+        Direction target = otherDirection();
+        application.requestTransfer(target);
+
+        application.acceptTransfer();
+
+        assertSame(target, application.getDirection());
+        assertSame(direction, application.getTransferredFrom());
+        assertFalse(application.isTransferPending());
+        assertNull(application.getTransferTo());
+    }
+
+    @Test
+    void acceptTransfer_doesNotChangeStatusesAndTexts() {
+        Application application = newApplication();
+        application.requestTransfer(otherDirection());
+
+        application.acceptTransfer();
+
+        assertEquals(ApplicationStatus.SUBMITTED, application.getStatus());
+        assertEquals(ReviewStatus.PENDING, application.getReviewStatus());
+        assertEquals("Title", application.getTitle());
+        assertEquals("Abstract", application.getAbstractText());
+        assertEquals("Content", application.getContent());
+    }
+
+    @Test
+    void rejectTransfer_keepsApplicationInSourceDirectionAndClearsTransfer() {
+        Application application = newApplication();
+        application.requestTransfer(otherDirection());
+
+        application.rejectTransfer();
+
+        assertSame(direction, application.getDirection());
+        assertFalse(application.isTransferPending());
+        assertNull(application.getTransferTo());
+        assertNull(application.getTransferredFrom());
+    }
+
+    @Test
+    void rejectTransfer_movesUpdatedAtForward() {
+        Application application = newApplication();
+        application.requestTransfer(otherDirection());
+        OffsetDateTime updatedBefore = application.getUpdatedAt();
+        pause();
+
+        application.rejectTransfer();
+
+        assertTrue(application.getUpdatedAt().isAfter(updatedBefore));
+    }
 }

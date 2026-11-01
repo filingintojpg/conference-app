@@ -504,4 +504,178 @@ class OrganizerApplicationControllerTest {
 
         verifyNoInteractions(service);
     }
+
+    // =====================================================================
+    //  передача заявок между направлениями
+    // =====================================================================
+
+    private static ApplicationResponse transferred(Long id, Long fromId, Long toId) {
+        OffsetDateTime time = OffsetDateTime.parse("2026-10-10T12:00:00+03:00");
+        return new ApplicationResponse(id, fromId, "Programming", 1L, "Ivanov Ivan Ivanovich", "ivan@example.com",
+                "Spring Boot", "Abstract", "Content", ApplicationStatus.SUBMITTED, ReviewStatus.PENDING, time, time,
+                fromId, "Programming", toId, toId == null ? null : "Biology");
+    }
+
+    @Test
+    void transfer_success_returnsApplicationWaitingForDecision() throws Exception {
+        when(service.transfer(5L, 100L, 20L)).thenReturn(transferred(5L, 10L, 20L));
+
+        mockMvc.perform(post(LIST_URL + "/5/transfer")
+                        .header(HEADER, "100")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"targetDirectionId\": 20}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(5))
+                .andExpect(jsonPath("$.directionId").value(10))
+                .andExpect(jsonPath("$.transferredFromDirectionId").value(10))
+                .andExpect(jsonPath("$.transferredFromDirectionName").value("Programming"))
+                .andExpect(jsonPath("$.transferToDirectionId").value(20))
+                .andExpect(jsonPath("$.transferToDirectionName").value("Biology"));
+
+        verify(service).transfer(5L, 100L, 20L);
+        verifyNoMoreInteractions(service);
+    }
+
+    @Test
+    void transfer_missingTargetDirection_returns400() throws Exception {
+        mockMvc.perform(post(LIST_URL + "/5/transfer")
+                        .header(HEADER, "100")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.fields.targetDirectionId").value("targetDirectionId is required"));
+
+        verifyNoInteractions(service);
+    }
+
+    @Test
+    void transfer_missingBody_returns400() throws Exception {
+        mockMvc.perform(post(LIST_URL + "/5/transfer").header(HEADER, "100"))
+                .andExpect(status().isBadRequest());
+
+        verifyNoInteractions(service);
+    }
+
+    @Test
+    void transfer_missingHeader_returns400() throws Exception {
+        mockMvc.perform(post(LIST_URL + "/5/transfer")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"targetDirectionId\": 20}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error").value("Header X-User-Id is required"));
+
+        verifyNoInteractions(service);
+    }
+
+    @Test
+    void transfer_targetDirectionNotFound_returns404() throws Exception {
+        when(service.transfer(5L, 100L, 99L)).thenThrow(new NotFoundException("Direction not found: 99"));
+
+        mockMvc.perform(post(LIST_URL + "/5/transfer")
+                        .header(HEADER, "100")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"targetDirectionId\": 99}"))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.error").value("Direction not found: 99"));
+    }
+
+    @Test
+    void transfer_directionOfAnotherOrganizer_returns403() throws Exception {
+        when(service.transfer(5L, 200L, 20L)).thenThrow(new ForbiddenException("Direction belongs to another organizer"));
+
+        mockMvc.perform(post(LIST_URL + "/5/transfer")
+                        .header(HEADER, "200")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"targetDirectionId\": 20}"))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.error").value("Direction belongs to another organizer"));
+    }
+
+    @Test
+    void transfer_alreadyWaitingForDecision_returns409() throws Exception {
+        when(service.transfer(5L, 100L, 20L))
+                .thenThrow(new ConflictException("Application is already waiting for a transfer decision"));
+
+        mockMvc.perform(post(LIST_URL + "/5/transfer")
+                        .header(HEADER, "100")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"targetDirectionId\": 20}"))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.error").value("Application is already waiting for a transfer decision"));
+    }
+
+    @Test
+    void acceptTransfer_success_returnsApplicationInNewDirection() throws Exception {
+        when(service.acceptTransfer(5L, 300L)).thenReturn(transferred(5L, 20L, null));
+
+        mockMvc.perform(post(LIST_URL + "/5/transfer/accept").header(HEADER, "300"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(5))
+                .andExpect(jsonPath("$.directionId").value(20))
+                .andExpect(jsonPath("$.transferToDirectionId").doesNotExist());
+
+        verify(service).acceptTransfer(5L, 300L);
+        verifyNoMoreInteractions(service);
+    }
+
+    @Test
+    void acceptTransfer_noPendingTransfer_returns409() throws Exception {
+        when(service.acceptTransfer(5L, 300L)).thenThrow(new ConflictException("Application has no pending transfer"));
+
+        mockMvc.perform(post(LIST_URL + "/5/transfer/accept").header(HEADER, "300"))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.error").value("Application has no pending transfer"));
+    }
+
+    @Test
+    void acceptTransfer_notTheTargetOrganizer_returns403() throws Exception {
+        when(service.acceptTransfer(5L, 100L)).thenThrow(new ForbiddenException("Direction belongs to another organizer"));
+
+        mockMvc.perform(post(LIST_URL + "/5/transfer/accept").header(HEADER, "100"))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.error").value("Direction belongs to another organizer"));
+    }
+
+    @Test
+    void acceptTransfer_missingHeader_returns400() throws Exception {
+        mockMvc.perform(post(LIST_URL + "/5/transfer/accept"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error").value("Header X-User-Id is required"));
+
+        verifyNoInteractions(service);
+    }
+
+    @Test
+    void rejectTransfer_success_returnsApplicationInSourceDirection() throws Exception {
+        when(service.rejectTransfer(5L, 300L)).thenReturn(transferred(5L, 10L, null));
+
+        mockMvc.perform(post(LIST_URL + "/5/transfer/reject").header(HEADER, "300"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.directionId").value(10))
+                .andExpect(jsonPath("$.transferToDirectionId").doesNotExist());
+
+        verify(service).rejectTransfer(5L, 300L);
+        verifyNoMoreInteractions(service);
+    }
+
+    @Test
+    void rejectTransfer_applicationNotFound_returns404() throws Exception {
+        when(service.rejectTransfer(999L, 300L)).thenThrow(new NotFoundException("Application not found: 999"));
+
+        mockMvc.perform(post(LIST_URL + "/999/transfer/reject").header(HEADER, "300"))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.error").value("Application not found: 999"));
+    }
+
+    @Test
+    void transferEndpoints_getMethodIsNotAllowed_returns405() throws Exception {
+        mockMvc.perform(get(LIST_URL + "/5/transfer").header(HEADER, "100"))
+                .andExpect(status().isMethodNotAllowed());
+        mockMvc.perform(get(LIST_URL + "/5/transfer/accept").header(HEADER, "300"))
+                .andExpect(status().isMethodNotAllowed());
+        mockMvc.perform(get(LIST_URL + "/5/transfer/reject").header(HEADER, "300"))
+                .andExpect(status().isMethodNotAllowed());
+
+        verifyNoInteractions(service);
+    }
 }

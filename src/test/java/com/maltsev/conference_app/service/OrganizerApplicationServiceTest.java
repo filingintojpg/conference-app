@@ -157,6 +157,7 @@ class OrganizerApplicationServiceTest {
 
         verify(directionRepository).findById(DIRECTION_ID);
         verify(applicationRepository).findByDirectionIdAndStatusOrderById(DIRECTION_ID, status);
+        verify(applicationRepository).findByTransferToIdOrderById(DIRECTION_ID);
         verifyNoMoreInteractions(applicationRepository, directionRepository);
     }
 
@@ -505,5 +506,302 @@ class OrganizerApplicationServiceTest {
         assertThrows(ConflictException.class, () -> service.approve(APPLICATION_ID, ORGANIZER_ID));
 
         assertEquals(ReviewStatus.REJECTED, application.getReviewStatus());
+    }
+
+    // =====================================================================
+    //  передача заявок между направлениями
+    // =====================================================================
+
+    private static final Long TARGET_ID = 20L;
+    private static final Long TARGET_ORGANIZER_ID = 300L;
+
+    /** Направление другого организатора, на которое передают заявки. */
+    private Direction target() {
+        return TestData.direction(TARGET_ID, OffsetDateTime.now().plusDays(30), TestData.organizer(TARGET_ORGANIZER_ID));
+    }
+
+    private void targetExists(Direction target) {
+        when(directionRepository.findById(TARGET_ID)).thenReturn(Optional.of(target));
+    }
+
+    private void applicationExists(Application application) {
+        when(applicationRepository.findById(APPLICATION_ID)).thenReturn(Optional.of(application));
+    }
+
+    /** Заявка, переданная с направления DIRECTION_ID на направление target и ждущая ответа. */
+    private Application transferredTo(Direction target) {
+        Application application = submitted(APPLICATION_ID);
+        application.requestTransfer(target);
+        return application;
+    }
+
+    // ---------- transfer ----------
+
+    @Test
+    void transfer_success_marksApplicationAsWaitingForTarget() {
+        Direction target = target();
+        Application application = submitted(APPLICATION_ID);
+        applicationExists(application);
+        targetExists(target);
+
+        ApplicationResponse response = service.transfer(APPLICATION_ID, ORGANIZER_ID, TARGET_ID);
+
+        assertEquals(DIRECTION_ID, response.directionId());
+        assertEquals(DIRECTION_ID, response.transferredFromDirectionId());
+        assertEquals(TARGET_ID, response.transferToDirectionId());
+        assertSame(target, application.getTransferTo());
+        assertSame(direction, application.getDirection());
+    }
+
+    @Test
+    void transfer_applicationNotFound_throwsNotFound() {
+        when(applicationRepository.findById(99L)).thenReturn(Optional.empty());
+
+        NotFoundException exception = assertThrows(NotFoundException.class,
+                () -> service.transfer(99L, ORGANIZER_ID, TARGET_ID));
+
+        assertEquals("Application not found: 99", exception.getMessage());
+    }
+
+    @Test
+    void transfer_directionOfAnotherOrganizer_throwsForbidden() {
+        Application application = submitted(APPLICATION_ID);
+        applicationExists(application);
+
+        assertThrows(ForbiddenException.class, () -> service.transfer(APPLICATION_ID, STRANGER_ID, TARGET_ID));
+
+        assertFalse(application.isTransferPending());
+    }
+
+    @Test
+    void transfer_targetDirectionNotFound_throwsNotFound() {
+        applicationExists(submitted(APPLICATION_ID));
+        when(directionRepository.findById(99L)).thenReturn(Optional.empty());
+
+        NotFoundException exception = assertThrows(NotFoundException.class,
+                () -> service.transfer(APPLICATION_ID, ORGANIZER_ID, 99L));
+
+        assertEquals("Direction not found: 99", exception.getMessage());
+    }
+
+    @Test
+    void transfer_toTheSameDirection_throwsConflict() {
+        Application application = submitted(APPLICATION_ID);
+        applicationExists(application);
+        when(directionRepository.findById(DIRECTION_ID)).thenReturn(Optional.of(direction));
+
+        ConflictException exception = assertThrows(ConflictException.class,
+                () -> service.transfer(APPLICATION_ID, ORGANIZER_ID, DIRECTION_ID));
+
+        assertEquals("Application already belongs to this direction", exception.getMessage());
+        assertFalse(application.isTransferPending());
+    }
+
+    @Test
+    void transfer_withdrawnApplication_throwsConflict() {
+        Application application = withdrawn(APPLICATION_ID);
+        applicationExists(application);
+        targetExists(target());
+
+        assertThrows(ConflictException.class, () -> service.transfer(APPLICATION_ID, ORGANIZER_ID, TARGET_ID));
+
+        assertFalse(application.isTransferPending());
+    }
+
+    @Test
+    void transfer_alreadyReviewedApplication_throwsConflict() {
+        Application application = submitted(APPLICATION_ID);
+        application.approve();
+        applicationExists(application);
+        targetExists(target());
+
+        assertThrows(ConflictException.class, () -> service.transfer(APPLICATION_ID, ORGANIZER_ID, TARGET_ID));
+
+        assertFalse(application.isTransferPending());
+    }
+
+    @Test
+    void transfer_alreadyWaitingForDecision_throwsConflict() {
+        Direction target = target();
+        Application application = transferredTo(target);
+        applicationExists(application);
+        targetExists(target);
+
+        ConflictException exception = assertThrows(ConflictException.class,
+                () -> service.transfer(APPLICATION_ID, ORGANIZER_ID, TARGET_ID));
+
+        assertEquals("Application is already waiting for a transfer decision", exception.getMessage());
+    }
+
+    // ---------- acceptTransfer ----------
+
+    @Test
+    void acceptTransfer_success_movesApplicationToTargetDirection() {
+        Direction target = target();
+        Application application = transferredTo(target);
+        applicationExists(application);
+
+        ApplicationResponse response = service.acceptTransfer(APPLICATION_ID, TARGET_ORGANIZER_ID);
+
+        assertEquals(TARGET_ID, response.directionId());
+        assertEquals(DIRECTION_ID, response.transferredFromDirectionId());
+        assertNull(response.transferToDirectionId());
+        assertSame(target, application.getDirection());
+        assertEquals(ReviewStatus.PENDING, application.getReviewStatus());
+    }
+
+    @Test
+    void acceptTransfer_sourceOrganizer_throwsForbidden() {
+        Application application = transferredTo(target());
+        applicationExists(application);
+
+        assertThrows(ForbiddenException.class, () -> service.acceptTransfer(APPLICATION_ID, ORGANIZER_ID));
+
+        assertTrue(application.isTransferPending());
+        assertSame(direction, application.getDirection());
+    }
+
+    @Test
+    void acceptTransfer_noPendingTransfer_throwsConflict() {
+        applicationExists(submitted(APPLICATION_ID));
+
+        ConflictException exception = assertThrows(ConflictException.class,
+                () -> service.acceptTransfer(APPLICATION_ID, TARGET_ORGANIZER_ID));
+
+        assertEquals("Application has no pending transfer", exception.getMessage());
+    }
+
+    @Test
+    void acceptTransfer_withdrawnApplication_throwsConflict() {
+        Application application = withdrawn(APPLICATION_ID);
+        application.requestTransfer(target());
+        applicationExists(application);
+
+        assertThrows(ConflictException.class, () -> service.acceptTransfer(APPLICATION_ID, TARGET_ORGANIZER_ID));
+
+        assertSame(direction, application.getDirection());
+    }
+
+    @Test
+    void acceptTransfer_applicationNotFound_throwsNotFound() {
+        when(applicationRepository.findById(99L)).thenReturn(Optional.empty());
+
+        assertThrows(NotFoundException.class, () -> service.acceptTransfer(99L, TARGET_ORGANIZER_ID));
+    }
+
+    // ---------- rejectTransfer ----------
+
+    @Test
+    void rejectTransfer_success_applicationStaysInSourceDirection() {
+        Application application = transferredTo(target());
+        applicationExists(application);
+
+        ApplicationResponse response = service.rejectTransfer(APPLICATION_ID, TARGET_ORGANIZER_ID);
+
+        assertEquals(DIRECTION_ID, response.directionId());
+        assertNull(response.transferToDirectionId());
+        assertNull(response.transferredFromDirectionId());
+        assertFalse(application.isTransferPending());
+    }
+
+    @Test
+    void rejectTransfer_withdrawnApplication_canStillBeRejected() {
+        Application application = withdrawn(APPLICATION_ID);
+        application.requestTransfer(target());
+        applicationExists(application);
+
+        service.rejectTransfer(APPLICATION_ID, TARGET_ORGANIZER_ID);
+
+        assertFalse(application.isTransferPending());
+    }
+
+    @Test
+    void rejectTransfer_sourceOrganizer_throwsForbidden() {
+        Application application = transferredTo(target());
+        applicationExists(application);
+
+        assertThrows(ForbiddenException.class, () -> service.rejectTransfer(APPLICATION_ID, ORGANIZER_ID));
+
+        assertTrue(application.isTransferPending());
+    }
+
+    @Test
+    void rejectTransfer_noPendingTransfer_throwsConflict() {
+        applicationExists(submitted(APPLICATION_ID));
+
+        assertThrows(ConflictException.class, () -> service.rejectTransfer(APPLICATION_ID, TARGET_ORGANIZER_ID));
+    }
+
+    // ---------- влияние передачи на список, просмотр и проверку ----------
+
+    @Test
+    void list_targetDirection_showsIncomingTransferBeforeOwnApplications() {
+        Direction target = target();
+        when(directionRepository.findById(TARGET_ID)).thenReturn(Optional.of(target));
+        Application incoming = transferredTo(target);
+        Application own = TestData.application(7L, participant, target);
+        when(applicationRepository.findByTransferToIdOrderById(TARGET_ID)).thenReturn(List.of(incoming));
+        when(applicationRepository.findByDirectionIdOrderById(TARGET_ID)).thenReturn(List.of(own));
+
+        List<ApplicationResponse> result = service.list(TARGET_ORGANIZER_ID, TARGET_ID, null, null);
+
+        assertEquals(List.of(APPLICATION_ID, 7L), result.stream().map(ApplicationResponse::id).toList());
+        assertEquals(DIRECTION_ID, result.get(0).transferredFromDirectionId());
+        assertEquals(TARGET_ID, result.get(0).transferToDirectionId());
+    }
+
+    @Test
+    void list_incomingTransfer_isFilteredByStatusAndReviewStatus() {
+        Direction target = target();
+        when(directionRepository.findById(TARGET_ID)).thenReturn(Optional.of(target));
+        when(applicationRepository.findByTransferToIdOrderById(TARGET_ID))
+                .thenReturn(List.of(transferredTo(target)));
+        when(applicationRepository.findByDirectionIdAndStatusAndReviewStatusOrderById(
+                TARGET_ID, ApplicationStatus.EDITED, ReviewStatus.PENDING)).thenReturn(List.of());
+
+        List<ApplicationResponse> result = service.list(
+                TARGET_ORGANIZER_ID, TARGET_ID, ApplicationStatus.EDITED, ReviewStatus.PENDING);
+
+        assertTrue(result.isEmpty());
+    }
+
+    @Test
+    void list_sourceDirection_stillShowsApplicationWaitingForDecision() {
+        directionExists();
+        Application application = transferredTo(target());
+        when(applicationRepository.findByDirectionIdOrderById(DIRECTION_ID)).thenReturn(List.of(application));
+
+        List<ApplicationResponse> result = service.list(ORGANIZER_ID, DIRECTION_ID, null, null);
+
+        assertEquals(1, result.size());
+        assertEquals(TARGET_ID, result.get(0).transferToDirectionId());
+    }
+
+    @Test
+    void get_targetOrganizer_canViewApplicationWaitingForDecision() {
+        applicationExists(transferredTo(target()));
+
+        ApplicationResponse response = service.get(APPLICATION_ID, TARGET_ORGANIZER_ID);
+
+        assertEquals(APPLICATION_ID, response.id());
+        assertEquals(DIRECTION_ID, response.directionId());
+    }
+
+    @Test
+    void get_targetOrganizer_cannotViewApplicationWithoutPendingTransfer() {
+        applicationExists(submitted(APPLICATION_ID));
+
+        assertThrows(ForbiddenException.class, () -> service.get(APPLICATION_ID, TARGET_ORGANIZER_ID));
+    }
+
+    @Test
+    void review_applicationWaitingForTransferDecision_throwsConflict() {
+        Application application = transferredTo(target());
+        applicationExists(application);
+
+        assertThrows(ConflictException.class, () -> service.approve(APPLICATION_ID, ORGANIZER_ID));
+        assertThrows(ConflictException.class, () -> service.reject(APPLICATION_ID, ORGANIZER_ID));
+
+        assertEquals(ReviewStatus.PENDING, application.getReviewStatus());
     }
 }
