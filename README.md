@@ -88,6 +88,14 @@ GET /organizer/applications?directionId=1&status=SUBMITTED&reviewStatus=PENDING
 
 #### POST `/organizer/applications/{id}/reject` - Application did not pass the review.
 
+### Expert committee member
+
+#### GET `/expert/applications` - Approver applications without author data.
+
+```text
+GET /expert/applications?directionId=1
+```
+
 ## Tests
 
 ```bash
