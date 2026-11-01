@@ -2,6 +2,7 @@ package com.maltsev.conference_app.dto;
 
 import com.maltsev.conference_app.model.Application;
 import com.maltsev.conference_app.model.ApplicationStatus;
+import com.maltsev.conference_app.model.ReviewStatus;
 import java.time.OffsetDateTime;
 
 public record ApplicationResponse(
@@ -15,6 +16,7 @@ public record ApplicationResponse(
         String abstractText,
         String content,
         ApplicationStatus status,
+        ReviewStatus reviewStatus,
         OffsetDateTime createdAt,
         OffsetDateTime updatedAt
 ) {
@@ -30,6 +32,7 @@ public record ApplicationResponse(
                 application.getAbstractText(),
                 application.getContent(),
                 application.getStatus(),
+                application.getReviewStatus(),
                 application.getCreatedAt(),
                 application.getUpdatedAt()
         );
