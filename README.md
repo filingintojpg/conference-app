@@ -37,10 +37,6 @@ docker compose down -v
 
 #### GET `/directions` - List of directions.
 
-```text
-GET /directions
-```
-
 #### GET `/users` - List of users (optional role filter).
 
 ```text
@@ -49,23 +45,11 @@ GET /users?role=ORGANIZER
 
 #### GET `/application-statuses` - List of possible application statuses.
 
-```text
-GET /application-statuses
-```
-
 #### GET `/review-statuses` - List of possible review statuses.
-
-```text
-GET /review-statuses
-```
 
 ### Participant
 
 #### GET `/applications` - List of the participant's applications.
-
-```text
-GET /applications
-```
 
 #### POST `/applications` - Create an application.
 
@@ -90,10 +74,6 @@ GET /applications
 
 #### POST `/applications/{id}/withdraw` - Withdraw an application.
 
-```text
-POST /applications/1/withdraw
-```
-
 ### Organizer
 
 #### GET `/organizer/applications` - List of applications with filters.
@@ -104,21 +84,9 @@ GET /organizer/applications?directionId=1&status=SUBMITTED&reviewStatus=PENDING
 
 #### GET `/organizer/applications/{id}` - Application in organizer's direction.
 
-```text
-GET /organizer/applications/1
-```
-
 #### POST `/organizer/applications/{id}/approve` - Application passed the review.
 
-```text
-POST /organizer/applications/1/approve
-```
-
 #### POST `/organizer/applications/{id}/reject` - Application did not pass the review.
-
-```text
-POST /organizer/applications/1/reject
-```
 
 ## Tests
 
