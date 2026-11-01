@@ -60,7 +60,9 @@ public class ParticipantApplicationService {
     public ApplicationResponse update(Long id, Long participantId, UpdateApplicationRequest request) {
         Application application = getApplication(id);
         checkOwner(application, participantId);
-        checkCanChange(application);
+        checkNotWithdrawn(application);
+        checkNotReviewed(application);
+        checkDeadline(application.getDirection(), OffsetDateTime.now());
         application.edit(request.title(), request.abstractText(), request.content());
         return ApplicationResponse.from(application);
     }
@@ -69,7 +71,8 @@ public class ParticipantApplicationService {
     public ApplicationResponse withdraw(Long id, Long participantId) {
         Application application = getApplication(id);
         checkOwner(application, participantId);
-        checkCanChange(application);
+        checkNotWithdrawn(application);
+        checkDeadline(application.getDirection(), OffsetDateTime.now());
         application.withdraw();
         return ApplicationResponse.from(application);
     }
@@ -84,11 +87,16 @@ public class ParticipantApplicationService {
         }
     }
 
-    private void checkCanChange(Application application) {
+    private void checkNotWithdrawn(Application application) {
         if (application.getStatus() == ApplicationStatus.WITHDRAWN) {
             throw new ConflictException("Application is already withdrawn");
         }
-        checkDeadline(application.getDirection(), OffsetDateTime.now());
+    }
+
+    private void checkNotReviewed(Application application) {
+        if (application.isReviewed()) {
+            throw new ConflictException("Application has already been reviewed and cannot be edited");
+        }
     }
 
     private void checkDeadline(Direction direction, OffsetDateTime now) {
