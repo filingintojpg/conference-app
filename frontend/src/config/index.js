@@ -21,6 +21,12 @@ export const APPLICATION_STATUS = {
   WITHDRAWN: 'WITHDRAWN',
 };
 
+export const REVIEW_STATUS = {
+  PENDING: 'PENDING',
+  APPROVED: 'APPROVED',
+  REJECTED: 'REJECTED',
+};
+
 // Подписи для отображения. Для неизвестного кода показываем сам код.
 export const ROLE_LABELS = {
   PARTICIPANT: 'участник',
@@ -31,6 +37,13 @@ export const STATUS_LABELS = {
   SUBMITTED: 'Подана',
   EDITED: 'Изменена',
   WITHDRAWN: 'Отозвана',
+};
+
+// Результат проверки заявки организатором.
+export const REVIEW_STATUS_LABELS = {
+  PENDING: 'Ожидает проверки',
+  APPROVED: 'Прошла проверку',
+  REJECTED: 'Не прошла проверку',
 };
 
 export const labelOf = (dictionary, code) => dictionary[code] ?? code;

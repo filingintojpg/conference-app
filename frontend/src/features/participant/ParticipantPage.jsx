@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react';
 import { directionsApi, participantApplicationsApi } from '../../api';
 import ApplicationList from '../../components/ApplicationList/ApplicationList';
 import Notice from '../../components/Notice/Notice';
-import { APPLICATION_STATUS } from '../../config';
+import { APPLICATION_STATUS, REVIEW_STATUS } from '../../config';
 import { useCurrentUser } from '../../context/CurrentUserContext';
 import { useAsync } from '../../hooks/useAsync';
 import { isPast } from '../../utils/format';
@@ -27,9 +27,13 @@ export default function ParticipantPage() {
     [directions.data],
   );
 
-  const canChange = (application) =>
+  const canWithdraw = (application) =>
     application.status !== APPLICATION_STATUS.WITHDRAWN &&
     !isPast(directionsById[application.directionId]?.deadline);
+
+  // После проверки организатором заявку можно только отозвать.
+  const canEdit = (application) =>
+    canWithdraw(application) && application.reviewStatus === REVIEW_STATUS.PENDING;
 
   const resetForm = () => {
     setEditing(null);
@@ -102,7 +106,12 @@ export default function ParticipantPage() {
               <>
                 <button
                   type="button"
-                  disabled={!canChange(application)}
+                  disabled={!canEdit(application)}
+                  title={
+                    application.reviewStatus !== REVIEW_STATUS.PENDING
+                      ? 'Заявка уже проверена - её можно только отозвать'
+                      : undefined
+                  }
                   onClick={() => startEditing(application)}
                 >
                   Редактировать
@@ -110,7 +119,7 @@ export default function ParticipantPage() {
                 <button
                   type="button"
                   className="danger"
-                  disabled={!canChange(application)}
+                  disabled={!canWithdraw(application)}
                   onClick={() => handleWithdraw(application)}
                 >
                   Отозвать

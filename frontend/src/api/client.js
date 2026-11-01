@@ -18,10 +18,6 @@ function buildQuery(params) {
   return query ? `?${query}` : '';
 }
 
-/**
- * Единая точка общения с бэкендом.
- * userId - от чьего лица выполняется запрос (заголовок X-User-Id).
- */
 export async function request(path, { method = 'GET', userId, params, body } = {}) {
   const headers = {};
   if (body !== undefined) headers['Content-Type'] = 'application/json';

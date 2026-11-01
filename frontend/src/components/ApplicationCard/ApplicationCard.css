@@ -23,6 +23,23 @@
   white-space: nowrap;
 }
 
+.application-card__badges {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 6px;
+}
+
+.application-card__review--APPROVED {
+  background: #dcfce7;
+  color: var(--color-success);
+}
+
+.application-card__review--REJECTED {
+  background: #fee2e2;
+  color: var(--color-danger);
+}
+
 .application-card__status--WITHDRAWN {
   color: var(--color-muted);
 }

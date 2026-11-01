@@ -13,10 +13,6 @@ function readStoredId() {
   }
 }
 
-/**
- * Хранит список пользователей (с бэкенда) и того, от чьего лица сейчас работаем.
- * Выбор запоминается в localStorage.
- */
 export function CurrentUserProvider({ children }) {
   const { data: users, loading, error, reload } = useAsync(() => usersApi.list(), []);
   const [selectedId, setSelectedId] = useState(readStoredId);
@@ -31,7 +27,6 @@ export function CurrentUserProvider({ children }) {
     try {
       localStorage.setItem(STORAGE_KEYS.currentUserId, String(id));
     } catch {
-      // localStorage недоступен - выбор просто не запомнится
     }
   }, []);
 

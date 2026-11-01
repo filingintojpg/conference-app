@@ -25,7 +25,6 @@ function Content() {
   const View = roleViews[currentUser.role];
   if (!View) return <Notice type="error">Нет экрана для роли {currentUser.role}</Notice>;
 
-  // key: при смене пользователя экран создаётся заново, и состояние прошлого не остаётся.
   return <View key={currentUser.id} />;
 }
 
