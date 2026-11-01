@@ -53,6 +53,12 @@ GET /users?role=ORGANIZER
 GET /application-statuses
 ```
 
+#### GET `/review-statuses` - List of possible review statuses.
+
+```text
+GET /review-statuses
+```
+
 ### Participant
 
 #### GET `/applications` - List of the participant's applications.
@@ -93,13 +99,25 @@ POST /applications/1/withdraw
 #### GET `/organizer/applications` - List of applications with filters.
 
 ```text
-GET /organizer/applications?directionId=1&status=SUBMITTED
+GET /organizer/applications?directionId=1&status=SUBMITTED&reviewStatus=PENDING
 ```
 
 #### GET `/organizer/applications/{id}` - Application in organizer's direction.
 
 ```text
 GET /organizer/applications/1
+```
+
+#### POST `/organizer/applications/{id}/approve` - Application passed the review.
+
+```text
+POST /organizer/applications/1/approve
+```
+
+#### POST `/organizer/applications/{id}/reject` - Application did not pass the review.
+
+```text
+POST /organizer/applications/1/reject
 ```
 
 ## Tests
