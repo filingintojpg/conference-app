@@ -18,8 +18,6 @@ public interface ApplicationRepository extends JpaRepository<Application, Long> 
                                                                          ApplicationStatus status,
                                                                          ReviewStatus reviewStatus);
 
-    List<Application> findByReviewStatusAndStatusNotOrderById(ReviewStatus reviewStatus, ApplicationStatus status);
-
     List<Application> findByDirectionIdAndReviewStatusAndStatusNotOrderById(Long directionId,
                                                                             ReviewStatus reviewStatus,
                                                                             ApplicationStatus status);

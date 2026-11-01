@@ -25,9 +25,18 @@ public class Direction {
     @JoinColumn(name = "organizer_id", nullable = false)
     private User organizer;
 
-    public Direction(String name, OffsetDateTime deadline, User organizer) {
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "expert_id")
+    private User expert;
+
+    public Direction(String name, OffsetDateTime deadline, User organizer, User expert) {
         this.name = name;
         this.deadline = deadline;
         this.organizer = organizer;
+        this.expert = expert;
+    }
+
+    public Direction(String name, OffsetDateTime deadline, User organizer) {
+        this(name, deadline, organizer, null);
     }
 }

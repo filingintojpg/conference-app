@@ -1,9 +1,9 @@
 package com.maltsev.conference_app.service;
 
 import com.maltsev.conference_app.dto.ExpertApplicationResponse;
-import com.maltsev.conference_app.exception.NotFoundException;
-import com.maltsev.conference_app.model.Application;
+import com.maltsev.conference_app.exception.ForbiddenException;
 import com.maltsev.conference_app.model.ApplicationStatus;
+import com.maltsev.conference_app.model.Direction;
 import com.maltsev.conference_app.model.ReviewStatus;
 import com.maltsev.conference_app.repository.ApplicationRepository;
 import com.maltsev.conference_app.repository.DirectionRepository;
@@ -24,18 +24,11 @@ public class ExpertApplicationService {
     }
 
     @Transactional(readOnly = true)
-    public List<ExpertApplicationResponse> list(Long directionId) {
-        List<Application> applications;
-        if (directionId == null) {
-            applications = applicationRepository.findByReviewStatusAndStatusNotOrderById(
-                    ReviewStatus.APPROVED, ApplicationStatus.WITHDRAWN);
-        } else {
-            if (!directionRepository.existsById(directionId)) {
-                throw new NotFoundException("Direction not found: " + directionId);
-            }
-            applications = applicationRepository.findByDirectionIdAndReviewStatusAndStatusNotOrderById(
-                    directionId, ReviewStatus.APPROVED, ApplicationStatus.WITHDRAWN);
-        }
-        return applications.stream().map(ExpertApplicationResponse::from).toList();
+    public List<ExpertApplicationResponse> list(Long expertId) {
+        Direction direction = directionRepository.findByExpertId(expertId)
+                .orElseThrow(() -> new ForbiddenException("Expert is not assigned to a direction"));
+        return applicationRepository.findByDirectionIdAndReviewStatusAndStatusNotOrderById(
+                        direction.getId(), ReviewStatus.APPROVED, ApplicationStatus.WITHDRAWN)
+                .stream().map(ExpertApplicationResponse::from).toList();
     }
 }

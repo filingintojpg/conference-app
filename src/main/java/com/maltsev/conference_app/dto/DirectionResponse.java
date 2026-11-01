@@ -9,15 +9,22 @@ public record DirectionResponse(
         String name,
         OffsetDateTime deadline,
         Long organizerId,
-        String organizerFullName
+        String organizerFullName,
+        Long expertId
 ) {
+    public DirectionResponse(Long id, String name, OffsetDateTime deadline,
+                             Long organizerId, String organizerFullName) {
+        this(id, name, deadline, organizerId, organizerFullName, null);
+    }
+
     public static DirectionResponse from(Direction direction) {
         return new DirectionResponse(
                 direction.getId(),
                 direction.getName(),
                 direction.getDeadline(),
                 direction.getOrganizer().getId(),
-                direction.getOrganizer().getFullName()
+                direction.getOrganizer().getFullName(),
+                direction.getExpert() == null ? null : direction.getExpert().getId()
         );
     }
 }

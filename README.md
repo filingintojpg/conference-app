@@ -90,12 +90,7 @@ GET /organizer/applications?directionId=1&status=SUBMITTED&reviewStatus=PENDING
 
 ### Expert committee member
 
-#### GET `/expert/applications` - Approver applications without author data.
-
-```text
-GET /expert/applications?directionId=1
-```
-
+#### GET `/expert/applications` - Approved applications of the expert's direction, without author data.
 ## Tests
 
 ```bash
