@@ -36,6 +36,10 @@ public class Application {
     @Column(nullable = false, length = 30)
     private ApplicationStatus status;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "review_status", nullable = false, length = 30)
+    private ReviewStatus reviewStatus;
+
     @Column(name = "created_at", nullable = false)
     private OffsetDateTime createdAt;
 
@@ -50,6 +54,7 @@ public class Application {
         this.abstractText = abstractText;
         this.content = content;
         this.status = ApplicationStatus.SUBMITTED;
+        this.reviewStatus = ReviewStatus.PENDING;
         this.createdAt = OffsetDateTime.now();
         this.updatedAt = OffsetDateTime.now();
     }
@@ -60,6 +65,20 @@ public class Application {
         this.content = content;
         this.status = ApplicationStatus.EDITED;
         this.updatedAt = OffsetDateTime.now();
+    }
+
+    public void approve() {
+        this.reviewStatus = ReviewStatus.APPROVED;
+        this.updatedAt = OffsetDateTime.now();
+    }
+
+    public void reject() {
+        this.reviewStatus = ReviewStatus.REJECTED;
+        this.updatedAt = OffsetDateTime.now();
+    }
+
+    public boolean isReviewed() {
+        return reviewStatus != ReviewStatus.PENDING;
     }
 
     public void withdraw() {
