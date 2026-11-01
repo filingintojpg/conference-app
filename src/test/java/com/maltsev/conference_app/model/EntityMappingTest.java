@@ -51,4 +51,12 @@ class EntityMappingTest {
 
         assertEquals("deadline", column.name());
     }
+
+    @Test
+    void applicationReviewStatus_isStoredAsStringInReviewStatusColumn() throws NoSuchFieldException {
+        java.lang.reflect.Field field = Application.class.getDeclaredField("reviewStatus");
+
+        assertEquals(EnumType.STRING, field.getAnnotation(Enumerated.class).value());
+        assertEquals("review_status", field.getAnnotation(Column.class).name());
+    }
 }

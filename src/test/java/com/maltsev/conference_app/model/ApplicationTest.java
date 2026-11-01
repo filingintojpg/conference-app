@@ -219,4 +219,57 @@ class ApplicationTest {
 
         assertEquals(ApplicationStatus.WITHDRAWN, application.getStatus());
     }
+
+    // ---------- проверка организатором ----------
+
+    @Test
+    void constructor_setsReviewStatusPending() {
+        Application application = newApplication();
+
+        assertEquals(ReviewStatus.PENDING, application.getReviewStatus());
+        assertFalse(application.isReviewed());
+    }
+
+    @Test
+    void approve_setsApprovedAndKeepsStatus() {
+        Application application = newApplication();
+
+        application.approve();
+
+        assertEquals(ReviewStatus.APPROVED, application.getReviewStatus());
+        assertEquals(ApplicationStatus.SUBMITTED, application.getStatus());
+        assertTrue(application.isReviewed());
+    }
+
+    @Test
+    void reject_setsRejectedAndKeepsStatus() {
+        Application application = newApplication();
+
+        application.reject();
+
+        assertEquals(ReviewStatus.REJECTED, application.getReviewStatus());
+        assertEquals(ApplicationStatus.SUBMITTED, application.getStatus());
+        assertTrue(application.isReviewed());
+    }
+
+    @Test
+    void approve_movesUpdatedAtForward() {
+        Application application = newApplication();
+        OffsetDateTime updatedBefore = application.getUpdatedAt();
+        pause();
+
+        application.approve();
+
+        assertTrue(application.getUpdatedAt().isAfter(updatedBefore));
+    }
+
+    @Test
+    void withdraw_doesNotChangeReviewStatus() {
+        Application application = newApplication();
+        application.approve();
+
+        application.withdraw();
+
+        assertEquals(ReviewStatus.APPROVED, application.getReviewStatus());
+    }
 }

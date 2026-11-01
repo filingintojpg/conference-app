@@ -1,10 +1,12 @@
 package com.maltsev.conference_app.controller;
 
 import com.maltsev.conference_app.dto.ApplicationResponse;
+import com.maltsev.conference_app.exception.ConflictException;
 import com.maltsev.conference_app.exception.ForbiddenException;
 import com.maltsev.conference_app.exception.GlobalExceptionHandler;
 import com.maltsev.conference_app.exception.NotFoundException;
 import com.maltsev.conference_app.model.ApplicationStatus;
+import com.maltsev.conference_app.model.ReviewStatus;
 import com.maltsev.conference_app.service.OrganizerApplicationService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -53,7 +55,7 @@ class OrganizerApplicationControllerTest {
     private static ApplicationResponse response(Long id, ApplicationStatus status) {
         OffsetDateTime time = OffsetDateTime.parse("2026-10-10T12:00:00+03:00");
         return new ApplicationResponse(id, 10L, "Programming", 1L, "Ivanov Ivan Ivanovich", "ivan@example.com",
-                "Spring Boot", "Abstract", "Content", status, time, time);
+                "Spring Boot", "Abstract", "Content", status, ReviewStatus.PENDING, time, time);
     }
 
     // =====================================================================
@@ -62,7 +64,7 @@ class OrganizerApplicationControllerTest {
 
     @Test
     void list_success_returns200WithJsonArray() throws Exception {
-        when(service.list(100L, 10L, ApplicationStatus.SUBMITTED))
+        when(service.list(100L, 10L, ApplicationStatus.SUBMITTED, null))
                 .thenReturn(List.of(response(1L, ApplicationStatus.SUBMITTED), response(2L, ApplicationStatus.SUBMITTED)));
 
         mockMvc.perform(get(LIST_URL)
@@ -79,7 +81,7 @@ class OrganizerApplicationControllerTest {
 
     @Test
     void list_success_eachItemHasAllFields() throws Exception {
-        when(service.list(100L, 10L, ApplicationStatus.SUBMITTED))
+        when(service.list(100L, 10L, ApplicationStatus.SUBMITTED, null))
                 .thenReturn(List.of(response(1L, ApplicationStatus.SUBMITTED)));
 
         mockMvc.perform(get(LIST_URL)
@@ -103,7 +105,7 @@ class OrganizerApplicationControllerTest {
 
     @Test
     void list_success_passesHeaderAndParametersToService() throws Exception {
-        when(service.list(100L, 10L, ApplicationStatus.EDITED)).thenReturn(List.of());
+        when(service.list(100L, 10L, ApplicationStatus.EDITED, null)).thenReturn(List.of());
 
         mockMvc.perform(get(LIST_URL)
                         .header(HEADER, "100")
@@ -111,13 +113,13 @@ class OrganizerApplicationControllerTest {
                         .param("status", "EDITED"))
                 .andExpect(status().isOk());
 
-        verify(service).list(100L, 10L, ApplicationStatus.EDITED);
+        verify(service).list(100L, 10L, ApplicationStatus.EDITED, null);
         verifyNoMoreInteractions(service);
     }
 
     @Test
     void list_noApplications_returns200WithEmptyArray() throws Exception {
-        when(service.list(100L, 10L, ApplicationStatus.SUBMITTED)).thenReturn(List.of());
+        when(service.list(100L, 10L, ApplicationStatus.SUBMITTED, null)).thenReturn(List.of());
 
         mockMvc.perform(get(LIST_URL)
                         .header(HEADER, "100")
@@ -131,7 +133,7 @@ class OrganizerApplicationControllerTest {
     @ParameterizedTest
     @EnumSource(ApplicationStatus.class)
     void list_everyStatusIsAccepted_andReturnedInJson(ApplicationStatus applicationStatus) throws Exception {
-        when(service.list(100L, 10L, applicationStatus)).thenReturn(List.of(response(1L, applicationStatus)));
+        when(service.list(100L, 10L, applicationStatus, null)).thenReturn(List.of(response(1L, applicationStatus)));
 
         mockMvc.perform(get(LIST_URL)
                         .header(HEADER, "100")
@@ -175,13 +177,14 @@ class OrganizerApplicationControllerTest {
     }
 
     @Test
-    void list_missingStatus_returns400() throws Exception {
+    void list_missingStatus_isAllowedAndMeansAnyStatus() throws Exception {
+        when(service.list(100L, 10L, null, null)).thenReturn(List.of(response(1L, ApplicationStatus.EDITED)));
+
         mockMvc.perform(get(LIST_URL)
                         .header(HEADER, "100")
                         .param("directionId", "10"))
-                .andExpect(status().isBadRequest());
-
-        verifyNoInteractions(service);
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(1));
     }
 
     @Test
@@ -230,7 +233,7 @@ class OrganizerApplicationControllerTest {
 
     @Test
     void list_directionNotFound_returns404() throws Exception {
-        when(service.list(100L, 999L, ApplicationStatus.SUBMITTED))
+        when(service.list(100L, 999L, ApplicationStatus.SUBMITTED, null))
                 .thenThrow(new NotFoundException("Direction not found: 999"));
 
         mockMvc.perform(get(LIST_URL)
@@ -243,7 +246,7 @@ class OrganizerApplicationControllerTest {
 
     @Test
     void list_directionOfAnotherOrganizer_returns403() throws Exception {
-        when(service.list(200L, 10L, ApplicationStatus.SUBMITTED))
+        when(service.list(200L, 10L, ApplicationStatus.SUBMITTED, null))
                 .thenThrow(new ForbiddenException("Direction belongs to another organizer"));
 
         mockMvc.perform(get(LIST_URL)
@@ -380,6 +383,124 @@ class OrganizerApplicationControllerTest {
     void unknownUrl_returns404() throws Exception {
         mockMvc.perform(get("/organizer/unknown").header(HEADER, "100"))
                 .andExpect(status().isNotFound());
+
+        verifyNoInteractions(service);
+    }
+
+    // =====================================================================
+    //  проверка заявок организатором
+    // =====================================================================
+
+    private static ApplicationResponse reviewed(Long id, ReviewStatus reviewStatus) {
+        OffsetDateTime time = OffsetDateTime.parse("2026-10-10T12:00:00+03:00");
+        return new ApplicationResponse(id, 10L, "Programming", 1L, "Ivanov Ivan Ivanovich", "ivan@example.com",
+                "Spring Boot", "Abstract", "Content", ApplicationStatus.SUBMITTED, reviewStatus, time, time);
+    }
+
+    @Test
+    void list_reviewStatusParameter_isPassedToService() throws Exception {
+        when(service.list(100L, 10L, null, ReviewStatus.REJECTED))
+                .thenReturn(List.of(reviewed(1L, ReviewStatus.REJECTED)));
+
+        mockMvc.perform(get(LIST_URL)
+                        .header(HEADER, "100")
+                        .param("directionId", "10")
+                        .param("reviewStatus", "REJECTED"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].reviewStatus").value("REJECTED"));
+    }
+
+    @Test
+    void list_bothFilters_arePassedToService() throws Exception {
+        when(service.list(100L, 10L, ApplicationStatus.EDITED, ReviewStatus.PENDING)).thenReturn(List.of());
+
+        mockMvc.perform(get(LIST_URL)
+                        .header(HEADER, "100")
+                        .param("directionId", "10")
+                        .param("status", "EDITED")
+                        .param("reviewStatus", "PENDING"))
+                .andExpect(status().isOk());
+
+        verify(service).list(100L, 10L, ApplicationStatus.EDITED, ReviewStatus.PENDING);
+    }
+
+    @Test
+    void list_unknownReviewStatus_returns400() throws Exception {
+        mockMvc.perform(get(LIST_URL)
+                        .header(HEADER, "100")
+                        .param("directionId", "10")
+                        .param("reviewStatus", "UNKNOWN"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error").value("Invalid value for 'reviewStatus'"));
+
+        verifyNoInteractions(service);
+    }
+
+    @Test
+    void approve_success_returnsApplicationWithApprovedStatus() throws Exception {
+        when(service.approve(5L, 100L)).thenReturn(reviewed(5L, ReviewStatus.APPROVED));
+
+        mockMvc.perform(post(LIST_URL + "/5/approve").header(HEADER, "100"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(5))
+                .andExpect(jsonPath("$.reviewStatus").value("APPROVED"));
+
+        verify(service).approve(5L, 100L);
+        verifyNoMoreInteractions(service);
+    }
+
+    @Test
+    void reject_success_returnsApplicationWithRejectedStatus() throws Exception {
+        when(service.reject(5L, 100L)).thenReturn(reviewed(5L, ReviewStatus.REJECTED));
+
+        mockMvc.perform(post(LIST_URL + "/5/reject").header(HEADER, "100"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.reviewStatus").value("REJECTED"));
+
+        verify(service).reject(5L, 100L);
+        verifyNoMoreInteractions(service);
+    }
+
+    @Test
+    void approve_missingHeader_returns400() throws Exception {
+        mockMvc.perform(post(LIST_URL + "/5/approve"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error").value("Header X-User-Id is required"));
+
+        verifyNoInteractions(service);
+    }
+
+    @Test
+    void approve_applicationNotFound_returns404() throws Exception {
+        when(service.approve(999L, 100L)).thenThrow(new NotFoundException("Application not found: 999"));
+
+        mockMvc.perform(post(LIST_URL + "/999/approve").header(HEADER, "100"))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.error").value("Application not found: 999"));
+    }
+
+    @Test
+    void reject_directionOfAnotherOrganizer_returns403() throws Exception {
+        when(service.reject(5L, 200L)).thenThrow(new ForbiddenException("Direction belongs to another organizer"));
+
+        mockMvc.perform(post(LIST_URL + "/5/reject").header(HEADER, "200"))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.error").value("Direction belongs to another organizer"));
+    }
+
+    @Test
+    void approve_alreadyReviewed_returns409() throws Exception {
+        when(service.approve(5L, 100L)).thenThrow(new ConflictException("Application has already been reviewed"));
+
+        mockMvc.perform(post(LIST_URL + "/5/approve").header(HEADER, "100"))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.error").value("Application has already been reviewed"));
+    }
+
+    @Test
+    void approve_getMethodIsNotAllowed_returns405() throws Exception {
+        mockMvc.perform(get(LIST_URL + "/5/approve").header(HEADER, "100"))
+                .andExpect(status().isMethodNotAllowed());
 
         verifyNoInteractions(service);
     }

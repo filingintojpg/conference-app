@@ -2,11 +2,13 @@ package com.maltsev.conference_app.service;
 
 import com.maltsev.conference_app.TestData;
 import com.maltsev.conference_app.dto.ApplicationResponse;
+import com.maltsev.conference_app.exception.ConflictException;
 import com.maltsev.conference_app.exception.ForbiddenException;
 import com.maltsev.conference_app.exception.NotFoundException;
 import com.maltsev.conference_app.model.Application;
 import com.maltsev.conference_app.model.ApplicationStatus;
 import com.maltsev.conference_app.model.Direction;
+import com.maltsev.conference_app.model.ReviewStatus;
 import com.maltsev.conference_app.model.User;
 import com.maltsev.conference_app.repository.ApplicationRepository;
 import com.maltsev.conference_app.repository.DirectionRepository;
@@ -93,7 +95,7 @@ class OrganizerApplicationServiceTest {
         directionExists();
         repositoryReturns(ApplicationStatus.SUBMITTED, submitted(1L), submitted(2L));
 
-        List<ApplicationResponse> result = service.list(ORGANIZER_ID, DIRECTION_ID, ApplicationStatus.SUBMITTED);
+        List<ApplicationResponse> result = service.list(ORGANIZER_ID, DIRECTION_ID, ApplicationStatus.SUBMITTED, null);
 
         assertEquals(2, result.size());
         assertEquals(1L, result.get(0).id());
@@ -105,7 +107,7 @@ class OrganizerApplicationServiceTest {
         directionExists();
         repositoryReturns(ApplicationStatus.SUBMITTED, submitted(3L), submitted(1L), submitted(2L));
 
-        List<ApplicationResponse> result = service.list(ORGANIZER_ID, DIRECTION_ID, ApplicationStatus.SUBMITTED);
+        List<ApplicationResponse> result = service.list(ORGANIZER_ID, DIRECTION_ID, ApplicationStatus.SUBMITTED, null);
 
         assertEquals(List.of(3L, 1L, 2L), result.stream().map(ApplicationResponse::id).toList());
     }
@@ -116,7 +118,7 @@ class OrganizerApplicationServiceTest {
         Application application = submitted(1L);
         repositoryReturns(ApplicationStatus.SUBMITTED, application);
 
-        ApplicationResponse response = service.list(ORGANIZER_ID, DIRECTION_ID, ApplicationStatus.SUBMITTED).get(0);
+        ApplicationResponse response = service.list(ORGANIZER_ID, DIRECTION_ID, ApplicationStatus.SUBMITTED, null).get(0);
 
         assertEquals(1L, response.id());
         assertEquals(DIRECTION_ID, response.directionId());
@@ -137,7 +139,7 @@ class OrganizerApplicationServiceTest {
         directionExists();
         repositoryReturns(ApplicationStatus.EDITED, edited(1L));
 
-        ApplicationResponse response = service.list(ORGANIZER_ID, DIRECTION_ID, ApplicationStatus.EDITED).get(0);
+        ApplicationResponse response = service.list(ORGANIZER_ID, DIRECTION_ID, ApplicationStatus.EDITED, null).get(0);
 
         assertEquals("Edited title", response.title());
         assertEquals("Edited abstract", response.abstractText());
@@ -151,7 +153,7 @@ class OrganizerApplicationServiceTest {
         directionExists();
         repositoryReturns(status);
 
-        service.list(ORGANIZER_ID, DIRECTION_ID, status);
+        service.list(ORGANIZER_ID, DIRECTION_ID, status, null);
 
         verify(directionRepository).findById(DIRECTION_ID);
         verify(applicationRepository).findByDirectionIdAndStatusOrderById(DIRECTION_ID, status);
@@ -163,7 +165,7 @@ class OrganizerApplicationServiceTest {
         directionExists();
         repositoryReturns(ApplicationStatus.WITHDRAWN);
 
-        List<ApplicationResponse> result = service.list(ORGANIZER_ID, DIRECTION_ID, ApplicationStatus.WITHDRAWN);
+        List<ApplicationResponse> result = service.list(ORGANIZER_ID, DIRECTION_ID, ApplicationStatus.WITHDRAWN, null);
 
         assertTrue(result.isEmpty());
     }
@@ -175,7 +177,7 @@ class OrganizerApplicationServiceTest {
         Application application = TestData.application(1L, participant, closed);
         repositoryReturns(ApplicationStatus.SUBMITTED, application);
 
-        List<ApplicationResponse> result = service.list(ORGANIZER_ID, DIRECTION_ID, ApplicationStatus.SUBMITTED);
+        List<ApplicationResponse> result = service.list(ORGANIZER_ID, DIRECTION_ID, ApplicationStatus.SUBMITTED, null);
 
         assertEquals(1, result.size());
     }
@@ -185,7 +187,7 @@ class OrganizerApplicationServiceTest {
         when(directionRepository.findById(99L)).thenReturn(Optional.empty());
 
         NotFoundException exception = assertThrows(NotFoundException.class,
-                () -> service.list(ORGANIZER_ID, 99L, ApplicationStatus.SUBMITTED));
+                () -> service.list(ORGANIZER_ID, 99L, ApplicationStatus.SUBMITTED, null));
 
         assertEquals("Direction not found: 99", exception.getMessage());
     }
@@ -194,7 +196,7 @@ class OrganizerApplicationServiceTest {
     void list_directionNotFound_doesNotLookForApplications() {
         when(directionRepository.findById(99L)).thenReturn(Optional.empty());
 
-        assertThrows(NotFoundException.class, () -> service.list(ORGANIZER_ID, 99L, ApplicationStatus.SUBMITTED));
+        assertThrows(NotFoundException.class, () -> service.list(ORGANIZER_ID, 99L, ApplicationStatus.SUBMITTED, null));
 
         verifyNoInteractions(applicationRepository);
     }
@@ -204,7 +206,7 @@ class OrganizerApplicationServiceTest {
         directionExists();
 
         ForbiddenException exception = assertThrows(ForbiddenException.class,
-                () -> service.list(STRANGER_ID, DIRECTION_ID, ApplicationStatus.SUBMITTED));
+                () -> service.list(STRANGER_ID, DIRECTION_ID, ApplicationStatus.SUBMITTED, null));
 
         assertEquals("Direction belongs to another organizer", exception.getMessage());
     }
@@ -214,7 +216,7 @@ class OrganizerApplicationServiceTest {
         directionExists();
 
         assertThrows(ForbiddenException.class,
-                () -> service.list(STRANGER_ID, DIRECTION_ID, ApplicationStatus.SUBMITTED));
+                () -> service.list(STRANGER_ID, DIRECTION_ID, ApplicationStatus.SUBMITTED, null));
 
         verifyNoInteractions(applicationRepository);
     }
@@ -224,7 +226,7 @@ class OrganizerApplicationServiceTest {
         directionExists();
 
         for (ApplicationStatus status : ApplicationStatus.values()) {
-            assertThrows(ForbiddenException.class, () -> service.list(STRANGER_ID, DIRECTION_ID, status));
+            assertThrows(ForbiddenException.class, () -> service.list(STRANGER_ID, DIRECTION_ID, status, null));
         }
     }
 
@@ -236,8 +238,8 @@ class OrganizerApplicationServiceTest {
         when(applicationRepository.findByDirectionIdAndStatusOrderById(20L, ApplicationStatus.SUBMITTED))
                 .thenReturn(List.of());
 
-        assertTrue(service.list(STRANGER_ID, 20L, ApplicationStatus.SUBMITTED).isEmpty());
-        assertThrows(ForbiddenException.class, () -> service.list(ORGANIZER_ID, 20L, ApplicationStatus.SUBMITTED));
+        assertTrue(service.list(STRANGER_ID, 20L, ApplicationStatus.SUBMITTED, null).isEmpty());
+        assertThrows(ForbiddenException.class, () -> service.list(ORGANIZER_ID, 20L, ApplicationStatus.SUBMITTED, null));
     }
 
     // =====================================================================
@@ -363,19 +365,145 @@ class OrganizerApplicationServiceTest {
                     return application.getStatus() == requested ? List.of(application) : List.of();
                 });
 
-        assertEquals(1, service.list(ORGANIZER_ID, DIRECTION_ID, ApplicationStatus.SUBMITTED).size());
-        assertEquals(0, service.list(ORGANIZER_ID, DIRECTION_ID, ApplicationStatus.EDITED).size());
+        assertEquals(1, service.list(ORGANIZER_ID, DIRECTION_ID, ApplicationStatus.SUBMITTED, null).size());
+        assertEquals(0, service.list(ORGANIZER_ID, DIRECTION_ID, ApplicationStatus.EDITED, null).size());
 
         application.edit("New title", "New abstract", "New content");
 
-        assertEquals(0, service.list(ORGANIZER_ID, DIRECTION_ID, ApplicationStatus.SUBMITTED).size());
-        assertEquals(1, service.list(ORGANIZER_ID, DIRECTION_ID, ApplicationStatus.EDITED).size());
+        assertEquals(0, service.list(ORGANIZER_ID, DIRECTION_ID, ApplicationStatus.SUBMITTED, null).size());
+        assertEquals(1, service.list(ORGANIZER_ID, DIRECTION_ID, ApplicationStatus.EDITED, null).size());
 
         application.withdraw();
 
-        assertEquals(0, service.list(ORGANIZER_ID, DIRECTION_ID, ApplicationStatus.EDITED).size());
-        List<ApplicationResponse> withdrawnList = service.list(ORGANIZER_ID, DIRECTION_ID, ApplicationStatus.WITHDRAWN);
+        assertEquals(0, service.list(ORGANIZER_ID, DIRECTION_ID, ApplicationStatus.EDITED, null).size());
+        List<ApplicationResponse> withdrawnList = service.list(ORGANIZER_ID, DIRECTION_ID, ApplicationStatus.WITHDRAWN, null);
         assertEquals(1, withdrawnList.size());
         assertEquals("New title", withdrawnList.get(0).title());
+    }
+
+    // =====================================================================
+    //  list: фильтр по результату проверки
+    // =====================================================================
+
+    @Test
+    void list_noFilters_returnsAllApplicationsOfDirection() {
+        directionExists();
+        when(applicationRepository.findByDirectionIdOrderById(DIRECTION_ID))
+                .thenReturn(List.of(submitted(1L), withdrawn(2L)));
+
+        assertEquals(2, service.list(ORGANIZER_ID, DIRECTION_ID, null, null).size());
+    }
+
+    @Test
+    void list_onlyReviewStatus_usesReviewStatusQuery() {
+        directionExists();
+        Application approved = submitted(1L);
+        approved.approve();
+        when(applicationRepository.findByDirectionIdAndReviewStatusOrderById(DIRECTION_ID, ReviewStatus.APPROVED))
+                .thenReturn(List.of(approved));
+
+        List<ApplicationResponse> result = service.list(ORGANIZER_ID, DIRECTION_ID, null, ReviewStatus.APPROVED);
+
+        assertEquals(1, result.size());
+        assertEquals(ReviewStatus.APPROVED, result.get(0).reviewStatus());
+    }
+
+    @Test
+    void list_bothFilters_usesCombinedQuery() {
+        directionExists();
+        when(applicationRepository.findByDirectionIdAndStatusAndReviewStatusOrderById(
+                DIRECTION_ID, ApplicationStatus.EDITED, ReviewStatus.PENDING)).thenReturn(List.of(edited(1L)));
+
+        List<ApplicationResponse> result =
+                service.list(ORGANIZER_ID, DIRECTION_ID, ApplicationStatus.EDITED, ReviewStatus.PENDING);
+
+        assertEquals(1, result.size());
+    }
+
+    @Test
+    void list_responseContainsReviewStatus() {
+        directionExists();
+        repositoryReturns(ApplicationStatus.SUBMITTED, submitted(1L));
+
+        assertEquals(ReviewStatus.PENDING, service.list(ORGANIZER_ID, DIRECTION_ID, ApplicationStatus.SUBMITTED, null).get(0).reviewStatus());
+    }
+
+    // =====================================================================
+    //  approve / reject
+    // =====================================================================
+
+    @Test
+    void approve_success_setsApprovedAndReturnsIt() {
+        Application application = submitted(APPLICATION_ID);
+        when(applicationRepository.findById(APPLICATION_ID)).thenReturn(Optional.of(application));
+
+        ApplicationResponse response = service.approve(APPLICATION_ID, ORGANIZER_ID);
+
+        assertEquals(ReviewStatus.APPROVED, response.reviewStatus());
+        assertEquals(ReviewStatus.APPROVED, application.getReviewStatus());
+        assertEquals(ApplicationStatus.SUBMITTED, application.getStatus());
+    }
+
+    @Test
+    void reject_success_setsRejectedAndReturnsIt() {
+        Application application = edited(APPLICATION_ID);
+        when(applicationRepository.findById(APPLICATION_ID)).thenReturn(Optional.of(application));
+
+        ApplicationResponse response = service.reject(APPLICATION_ID, ORGANIZER_ID);
+
+        assertEquals(ReviewStatus.REJECTED, response.reviewStatus());
+        assertEquals(ApplicationStatus.EDITED, application.getStatus());
+    }
+
+    @Test
+    void approve_applicationNotFound_throwsNotFound() {
+        when(applicationRepository.findById(99L)).thenReturn(Optional.empty());
+
+        assertThrows(NotFoundException.class, () -> service.approve(99L, ORGANIZER_ID));
+    }
+
+    @Test
+    void approve_directionOfAnotherOrganizer_throwsForbiddenAndKeepsPending() {
+        Application application = submitted(APPLICATION_ID);
+        when(applicationRepository.findById(APPLICATION_ID)).thenReturn(Optional.of(application));
+
+        assertThrows(ForbiddenException.class, () -> service.approve(APPLICATION_ID, STRANGER_ID));
+        assertThrows(ForbiddenException.class, () -> service.reject(APPLICATION_ID, STRANGER_ID));
+
+        assertEquals(ReviewStatus.PENDING, application.getReviewStatus());
+    }
+
+    @Test
+    void approve_withdrawnApplication_throwsConflict() {
+        Application application = withdrawn(APPLICATION_ID);
+        when(applicationRepository.findById(APPLICATION_ID)).thenReturn(Optional.of(application));
+
+        assertThrows(ConflictException.class, () -> service.approve(APPLICATION_ID, ORGANIZER_ID));
+        assertThrows(ConflictException.class, () -> service.reject(APPLICATION_ID, ORGANIZER_ID));
+
+        assertEquals(ReviewStatus.PENDING, application.getReviewStatus());
+    }
+
+    @Test
+    void review_alreadyApproved_cannotBeReviewedAgain() {
+        Application application = submitted(APPLICATION_ID);
+        application.approve();
+        when(applicationRepository.findById(APPLICATION_ID)).thenReturn(Optional.of(application));
+
+        assertThrows(ConflictException.class, () -> service.approve(APPLICATION_ID, ORGANIZER_ID));
+        assertThrows(ConflictException.class, () -> service.reject(APPLICATION_ID, ORGANIZER_ID));
+
+        assertEquals(ReviewStatus.APPROVED, application.getReviewStatus());
+    }
+
+    @Test
+    void review_alreadyRejected_cannotBeReviewedAgain() {
+        Application application = submitted(APPLICATION_ID);
+        application.reject();
+        when(applicationRepository.findById(APPLICATION_ID)).thenReturn(Optional.of(application));
+
+        assertThrows(ConflictException.class, () -> service.approve(APPLICATION_ID, ORGANIZER_ID));
+
+        assertEquals(ReviewStatus.REJECTED, application.getReviewStatus());
     }
 }

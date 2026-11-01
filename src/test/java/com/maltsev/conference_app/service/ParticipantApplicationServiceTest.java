@@ -10,6 +10,7 @@ import com.maltsev.conference_app.exception.NotFoundException;
 import com.maltsev.conference_app.model.Application;
 import com.maltsev.conference_app.model.ApplicationStatus;
 import com.maltsev.conference_app.model.Direction;
+import com.maltsev.conference_app.model.ReviewStatus;
 import com.maltsev.conference_app.model.User;
 import com.maltsev.conference_app.repository.ApplicationRepository;
 import com.maltsev.conference_app.repository.DirectionRepository;
@@ -565,5 +566,68 @@ class ParticipantApplicationServiceTest {
         // 4. после отзыва нельзя ни править, ни отзывать повторно
         assertThrows(ConflictException.class, () -> service.update(100L, OWNER_ID, updateRequest()));
         assertThrows(ConflictException.class, () -> service.withdraw(100L, OWNER_ID));
+    }
+
+    // =====================================================================
+    //  после проверки организатором
+    // =====================================================================
+
+    @Test
+    void create_success_savedApplicationIsPendingReview() {
+        when(userRepository.findById(OWNER_ID)).thenReturn(Optional.of(owner));
+        when(directionRepository.findById(OPEN_DIRECTION_ID)).thenReturn(Optional.of(openDirection));
+        stubSaveAssigningId();
+
+        ApplicationResponse response = service.create(OWNER_ID, createRequest(OPEN_DIRECTION_ID));
+
+        assertEquals(ReviewStatus.PENDING, response.reviewStatus());
+    }
+
+    @Test
+    void update_approvedApplication_throwsConflictAndKeepsTexts() {
+        Application application = existingApplication(openDirection);
+        application.approve();
+
+        assertThrows(ConflictException.class, () -> service.update(APPLICATION_ID, OWNER_ID, updateRequest()));
+
+        assertApplicationUntouched(application);
+    }
+
+    @Test
+    void update_rejectedApplication_throwsConflictAndKeepsTexts() {
+        Application application = existingApplication(openDirection);
+        application.reject();
+
+        assertThrows(ConflictException.class, () -> service.update(APPLICATION_ID, OWNER_ID, updateRequest()));
+
+        assertApplicationUntouched(application);
+    }
+
+    @Test
+    void update_pendingApplication_keepsPendingReviewStatus() {
+        Application application = existingApplication(openDirection);
+
+        service.update(APPLICATION_ID, OWNER_ID, updateRequest());
+
+        assertEquals(ReviewStatus.PENDING, application.getReviewStatus());
+    }
+
+    @Test
+    void withdraw_approvedApplication_succeedsAndKeepsReviewStatus() {
+        Application application = existingApplication(openDirection);
+        application.approve();
+
+        ApplicationResponse response = service.withdraw(APPLICATION_ID, OWNER_ID);
+
+        assertEquals(ApplicationStatus.WITHDRAWN, response.status());
+        assertEquals(ReviewStatus.APPROVED, response.reviewStatus());
+    }
+
+    @Test
+    void withdraw_rejectedApplication_succeeds() {
+        Application application = existingApplication(openDirection);
+        application.reject();
+
+        assertEquals(ApplicationStatus.WITHDRAWN, service.withdraw(APPLICATION_ID, OWNER_ID).status());
     }
 }

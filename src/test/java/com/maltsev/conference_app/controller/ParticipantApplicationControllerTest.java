@@ -8,6 +8,7 @@ import com.maltsev.conference_app.exception.ForbiddenException;
 import com.maltsev.conference_app.exception.GlobalExceptionHandler;
 import com.maltsev.conference_app.exception.NotFoundException;
 import com.maltsev.conference_app.model.ApplicationStatus;
+import com.maltsev.conference_app.model.ReviewStatus;
 import com.maltsev.conference_app.service.ParticipantApplicationService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -52,7 +53,7 @@ class ParticipantApplicationControllerTest {
     private static ApplicationResponse response(ApplicationStatus status) {
         OffsetDateTime time = OffsetDateTime.parse("2026-10-10T12:00:00+03:00");
         return new ApplicationResponse(100L, 10L, "Programming", 1L, "Ivanov Ivan Ivanovich", "ivan@example.com",
-                "Spring Boot", "Abstract", "Content", status, time, time);
+                "Spring Boot", "Abstract", "Content", status, ReviewStatus.PENDING, time, time);
     }
 
     private static String createJson(String directionId, String title, String abstractText, String content) {
