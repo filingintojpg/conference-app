@@ -5,3 +5,4 @@ export { statusesApi } from './statuses';
 export { reviewStatusesApi } from './reviewStatuses';
 export { participantApplicationsApi } from './participantApplications';
 export { organizerApplicationsApi } from './organizerApplications';
+export { expertApplicationsApi } from './expertApplications';

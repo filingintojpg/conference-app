@@ -1,4 +1,5 @@
 import { ROLES } from '../config';
+import ExpertPage from './expert/ExpertPage';
 import OrganizerPage from './organizer/OrganizerPage';
 import ParticipantPage from './participant/ParticipantPage';
 
@@ -7,4 +8,5 @@ import ParticipantPage from './participant/ParticipantPage';
 export const roleViews = {
   [ROLES.PARTICIPANT]: ParticipantPage,
   [ROLES.ORGANIZER]: OrganizerPage,
+  [ROLES.EXPERT]: ExpertPage,
 };

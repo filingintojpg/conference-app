@@ -1,0 +1,7 @@
+.expert-page {
+  max-width: 800px;
+}
+
+.expert-page > * + * {
+  margin-top: var(--gap);
+}

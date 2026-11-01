@@ -13,6 +13,7 @@ export const STORAGE_KEYS = {
 export const ROLES = {
   PARTICIPANT: 'PARTICIPANT',
   ORGANIZER: 'ORGANIZER',
+  EXPERT: 'EXPERT',
 };
 
 export const APPLICATION_STATUS = {
@@ -31,6 +32,7 @@ export const REVIEW_STATUS = {
 export const ROLE_LABELS = {
   PARTICIPANT: 'участник',
   ORGANIZER: 'организатор',
+  EXPERT: 'член экспертной комиссии',
 };
 
 export const STATUS_LABELS = {
