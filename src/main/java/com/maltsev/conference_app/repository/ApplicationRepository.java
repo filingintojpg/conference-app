@@ -22,5 +22,7 @@ public interface ApplicationRepository extends JpaRepository<Application, Long> 
                                                                             ReviewStatus reviewStatus,
                                                                             ApplicationStatus status);
 
+    List<Application> findByTransferToIdOrderById(Long directionId);
+
     List<Application> findByParticipantIdOrderByIdDesc(Long participantId);
 }

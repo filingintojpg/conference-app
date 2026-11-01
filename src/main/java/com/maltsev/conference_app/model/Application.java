@@ -40,6 +40,14 @@ public class Application {
     @Column(name = "review_status", nullable = false, length = 30)
     private ReviewStatus reviewStatus;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "transfer_from_direction_id")
+    private Direction transferredFrom;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "transfer_to_direction_id")
+    private Direction transferTo;
+
     @Column(name = "created_at", nullable = false)
     private OffsetDateTime createdAt;
 
@@ -79,6 +87,28 @@ public class Application {
 
     public boolean isReviewed() {
         return reviewStatus != ReviewStatus.PENDING;
+    }
+
+    public boolean isTransferPending() {
+        return transferTo != null;
+    }
+
+    public void requestTransfer(Direction target) {
+        this.transferredFrom = this.direction;
+        this.transferTo = target;
+        this.updatedAt = OffsetDateTime.now();
+    }
+
+    public void acceptTransfer() {
+        this.direction = this.transferTo;
+        this.transferTo = null;
+        this.updatedAt = OffsetDateTime.now();
+    }
+
+    public void rejectTransfer() {
+        this.transferTo = null;
+        this.transferredFrom = null;
+        this.updatedAt = OffsetDateTime.now();
     }
 
     public void withdraw() {
