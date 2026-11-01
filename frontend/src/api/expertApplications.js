@@ -1,7 +1,6 @@
 import { request } from './client';
 
 export const expertApplicationsApi = {
-  // directionId необязателен: без него вернутся заявки всех направлений.
-  list: (userId, directionId) =>
-    request('/expert/applications', { userId, params: { directionId } }),
+  // Эксперт привязан к одному направлению на бэкенде, фильтр по направлению не нужен.
+  list: (userId) => request('/expert/applications', { userId }),
 };
