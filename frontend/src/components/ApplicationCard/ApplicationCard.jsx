@@ -10,6 +10,8 @@ export default function ApplicationCard({ application, showParticipant = false, 
     (application.status !== APPLICATION_STATUS.WITHDRAWN ||
       application.reviewStatus !== REVIEW_STATUS.PENDING);
 
+  const transferPending = Boolean(application.transferToDirectionId);
+
   return (
     <article className="application-card">
       <header className="application-card__header">
@@ -20,6 +22,11 @@ export default function ApplicationCard({ application, showParticipant = false, 
               className={`application-card__status application-card__status--${application.status}`}
             >
               {labelOf(STATUS_LABELS, application.status)}
+            </span>
+          )}
+          {transferPending && (
+            <span className="application-card__status application-card__transfer-badge">
+              Передача ожидает решения
             </span>
           )}
           {showReview && (
@@ -34,6 +41,17 @@ export default function ApplicationCard({ application, showParticipant = false, 
 
       <div className="application-card__meta">
         <div>Направление: {application.directionName}</div>
+        {transferPending && (
+          <div className="application-card__transfer">
+            Передана с направления «{application.transferredFromDirectionName}» на направление «
+            {application.transferToDirectionName}», ожидает решения
+          </div>
+        )}
+        {!transferPending && application.transferredFromDirectionName && (
+          <div className="application-card__transfer">
+            Передана с направления «{application.transferredFromDirectionName}»
+          </div>
+        )}
         {showParticipant && (
           <div>
             Участник: {application.participantFullName} ({application.participantEmail})

@@ -1,0 +1,15 @@
+.transfer-action {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 8px;
+}
+
+.transfer-action .select {
+  min-width: 260px;
+}
+
+.transfer-action__buttons {
+  display: flex;
+  gap: 8px;
+}

@@ -8,6 +8,7 @@ import {
 import ApplicationList from '../../components/ApplicationList/ApplicationList';
 import Notice from '../../components/Notice/Notice';
 import Select from '../../components/Select/Select';
+import TransferAction from './TransferAction';
 import {
   APPLICATION_STATUS,
   REVIEW_STATUS,
@@ -19,7 +20,10 @@ import { useCurrentUser } from '../../context/CurrentUserContext';
 import { useAsync } from '../../hooks/useAsync';
 import './OrganizerPage.css';
 
-/** Экран организатора: заявки своих направлений, фильтры и проверка заявок. */
+/**
+ * Экран организатора: заявки своих направлений, фильтры, проверка заявок
+ * и передача заявок между направлениями.
+ */
 export default function OrganizerPage() {
   const { currentUser } = useCurrentUser();
   const directions = useAsync(() => directionsApi.list(), []);
@@ -59,11 +63,12 @@ export default function OrganizerPage() {
     { enabled: Boolean(selectedDirectionId) },
   );
 
-  async function review(application, action, successText) {
+  // Выполняет действие над заявкой, показывает результат и перезагружает список.
+  async function run(application, call, successText) {
     setReviewingId(application.id);
     setMessage(null);
     try {
-      await organizerApplicationsApi[action](currentUser.id, application.id);
+      await call();
       setMessage({ type: 'success', text: successText });
     } catch (err) {
       setMessage({ type: 'error', text: err.message });
@@ -73,9 +78,33 @@ export default function OrganizerPage() {
     }
   }
 
+  const review = (application, action, successText) =>
+    run(application, () => organizerApplicationsApi[action](currentUser.id, application.id), successText);
+
+  const transfer = (application, targetDirectionId) => {
+    const target = (directions.data ?? []).find((d) => String(d.id) === String(targetDirectionId));
+    return run(
+      application,
+      () => organizerApplicationsApi.transfer(currentUser.id, application.id, Number(targetDirectionId)),
+      `Заявка передана на направление «${target?.name ?? targetDirectionId}», ожидает решения организатора`,
+    );
+  };
+
+  const hasPendingTransfer = (application) => Boolean(application.transferToDirectionId);
+
+  // Заявка передана на выбранное направление и ждёт ответа его организатора.
+  const isIncomingTransfer = (application) =>
+    hasPendingTransfer(application) &&
+    String(application.transferToDirectionId) === selectedDirectionId;
+
+  const isWithdrawn = (application) => application.status === APPLICATION_STATUS.WITHDRAWN;
+
+  // Проверить или передать можно только неотозванную заявку без результата проверки
+  // и без ожидающей передачи.
   const canReview = (application) =>
-    application.status !== APPLICATION_STATUS.WITHDRAWN &&
-    application.reviewStatus === REVIEW_STATUS.PENDING;
+    !isWithdrawn(application) &&
+    application.reviewStatus === REVIEW_STATUS.PENDING &&
+    !hasPendingTransfer(application);
 
   const loadError = directions.error || statuses.error || reviewStatuses.error;
   if (loadError) return <Notice type="error">{loadError.message}</Notice>;
@@ -122,13 +151,54 @@ export default function OrganizerPage() {
           applications={applications.data}
           showParticipant
           emptyText="Заявок с такими параметрами нет"
-          renderActions={(application) =>
-            canReview(application) && (
+          renderActions={(application) => {
+            const busy = reviewingId === application.id;
+
+            if (isIncomingTransfer(application)) {
+              return (
+                <>
+                  {!isWithdrawn(application) && (
+                    <button
+                      type="button"
+                      className="primary"
+                      disabled={busy}
+                      onClick={() =>
+                        run(
+                          application,
+                          () => organizerApplicationsApi.acceptTransfer(currentUser.id, application.id),
+                          'Заявка принята на данное направление',
+                        )
+                      }
+                    >
+                      Принять на данное направление
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    className="danger"
+                    disabled={busy}
+                    onClick={() =>
+                      run(
+                        application,
+                        () => organizerApplicationsApi.rejectTransfer(currentUser.id, application.id),
+                        'Передача заявки отвергнута, заявка осталась на прежнем направлении',
+                      )
+                    }
+                  >
+                    Отвергнуть
+                  </button>
+                </>
+              );
+            }
+
+            if (!canReview(application)) return null;
+
+            return (
               <>
                 <button
                   type="button"
                   className="primary"
-                  disabled={reviewingId === application.id}
+                  disabled={busy}
                   onClick={() => review(application, 'approve', 'Заявка прошла проверку')}
                 >
                   Подтвердить
@@ -136,14 +206,19 @@ export default function OrganizerPage() {
                 <button
                   type="button"
                   className="danger"
-                  disabled={reviewingId === application.id}
+                  disabled={busy}
                   onClick={() => review(application, 'reject', 'Заявка не прошла проверку')}
                 >
                   Отклонить
                 </button>
+                <TransferAction
+                  directions={directions.data.filter((d) => d.id !== application.directionId)}
+                  disabled={busy}
+                  onTransfer={(targetId) => transfer(application, targetId)}
+                />
               </>
-            )
-          }
+            );
+          }}
         />
       )}
     </div>

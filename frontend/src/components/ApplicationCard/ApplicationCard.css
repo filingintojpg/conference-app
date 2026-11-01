@@ -40,6 +40,16 @@
   color: var(--color-danger);
 }
 
+.application-card__transfer-badge {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.application-card__transfer {
+  margin-top: 4px;
+  color: #92400e;
+}
+
 .application-card__status--WITHDRAWN {
   color: var(--color-muted);
 }
@@ -57,6 +67,7 @@
 }
 
 .application-card__actions {
+  flex-wrap: wrap;
   display: flex;
   gap: 8px;
   margin-top: var(--gap);
