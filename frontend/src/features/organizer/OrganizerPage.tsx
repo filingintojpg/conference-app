@@ -16,8 +16,10 @@ import {
   STATUS_LABELS,
   labelOf,
 } from '../../config';
-import { useCurrentUser } from '../../context/CurrentUserContext';
+import { useRequiredUser } from '../../context/CurrentUserContext';
 import { useAsync } from '../../hooks/useAsync';
+import type { Application, FlashMessage } from '../../types';
+import { errorMessage } from '../../utils/format';
 import './OrganizerPage.css';
 
 /**
@@ -25,7 +27,7 @@ import './OrganizerPage.css';
  * и передача заявок между направлениями.
  */
 export default function OrganizerPage() {
-  const { currentUser } = useCurrentUser();
+  const currentUser = useRequiredUser();
   const directions = useAsync(() => directionsApi.list(), []);
   const statuses = useAsync(() => statusesApi.list(), []);
   const reviewStatuses = useAsync(() => reviewStatusesApi.list(), []);
@@ -33,9 +35,9 @@ export default function OrganizerPage() {
   const [directionId, setDirectionId] = useState('');
   // Пустая строка - "любой".
   const [status, setStatus] = useState('');
-  const [reviewStatus, setReviewStatus] = useState(REVIEW_STATUS.PENDING);
-  const [message, setMessage] = useState(null);
-  const [reviewingId, setReviewingId] = useState(null);
+  const [reviewStatus, setReviewStatus] = useState<string>(REVIEW_STATUS.PENDING);
+  const [message, setMessage] = useState<FlashMessage | null>(null);
+  const [reviewingId, setReviewingId] = useState<number | null>(null);
 
   // Организатор видит только свои направления.
   const myDirections = useMemo(
@@ -64,24 +66,32 @@ export default function OrganizerPage() {
   );
 
   // Выполняет действие над заявкой, показывает результат и перезагружает список.
-  async function run(application, call, successText) {
+  async function run(
+    application: Application,
+    call: () => Promise<unknown>,
+    successText: string,
+  ) {
     setReviewingId(application.id);
     setMessage(null);
     try {
       await call();
       setMessage({ type: 'success', text: successText });
     } catch (err) {
-      setMessage({ type: 'error', text: err.message });
+      setMessage({ type: 'error', text: errorMessage(err) });
     } finally {
       setReviewingId(null);
       applications.reload();
     }
   }
 
-  const review = (application, action, successText) =>
+  const review = (
+    application: Application,
+    action: 'approve' | 'reject',
+    successText: string,
+  ) =>
     run(application, () => organizerApplicationsApi[action](currentUser.id, application.id), successText);
 
-  const transfer = (application, targetDirectionId) => {
+  const transfer = (application: Application, targetDirectionId: string) => {
     const target = (directions.data ?? []).find((d) => String(d.id) === String(targetDirectionId));
     return run(
       application,
@@ -90,18 +100,18 @@ export default function OrganizerPage() {
     );
   };
 
-  const hasPendingTransfer = (application) => Boolean(application.transferToDirectionId);
+  const hasPendingTransfer = (application: Application) => Boolean(application.transferToDirectionId);
 
   // Заявка передана на выбранное направление и ждёт ответа его организатора.
-  const isIncomingTransfer = (application) =>
+  const isIncomingTransfer = (application: Application) =>
     hasPendingTransfer(application) &&
     String(application.transferToDirectionId) === selectedDirectionId;
 
-  const isWithdrawn = (application) => application.status === APPLICATION_STATUS.WITHDRAWN;
+  const isWithdrawn = (application: Application) => application.status === APPLICATION_STATUS.WITHDRAWN;
 
   // Проверить или передать можно только неотозванную заявку без результата проверки
   // и без ожидающей передачи.
-  const canReview = (application) =>
+  const canReview = (application: Application) =>
     !isWithdrawn(application) &&
     application.reviewStatus === REVIEW_STATUS.PENDING &&
     !hasPendingTransfer(application);
@@ -212,7 +222,7 @@ export default function OrganizerPage() {
                   Отклонить
                 </button>
                 <TransferAction
-                  directions={directions.data.filter((d) => d.id !== application.directionId)}
+                  directions={(directions.data ?? []).filter((d) => d.id !== application.directionId)}
                   disabled={busy}
                   onTransfer={(targetId) => transfer(application, targetId)}
                 />

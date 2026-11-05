@@ -1,5 +1,22 @@
 import './Select.css';
 
+export interface SelectOption {
+  value: string;
+  label: string;
+  disabled?: boolean;
+}
+
+interface SelectProps {
+  label?: string;
+  value: string;
+  onChange: (value: string) => void;
+  options: SelectOption[];
+  placeholder?: string;
+  disabled?: boolean;
+  required?: boolean;
+  error?: string;
+}
+
 /**
  * Выпадающий список.
  * options: [{ value, label, disabled? }]; onChange получает выбранное значение (строку).
@@ -13,7 +30,7 @@ export default function Select({
   disabled = false,
   required = false,
   error,
-}) {
+}: SelectProps) {
   return (
     <label className="select">
       {label && <span className="select__label">{label}</span>}

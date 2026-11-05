@@ -1,13 +1,13 @@
 import { directionsApi, expertApplicationsApi } from '../../api';
 import ApplicationList from '../../components/ApplicationList/ApplicationList';
 import Notice from '../../components/Notice/Notice';
-import { useCurrentUser } from '../../context/CurrentUserContext';
+import { useRequiredUser } from '../../context/CurrentUserContext';
 import { useAsync } from '../../hooks/useAsync';
 import './ExpertPage.css';
 
 /** Экран члена экспертной комиссии: подтверждённые заявки своего направления без данных об авторах. */
 export default function ExpertPage() {
-  const { currentUser } = useCurrentUser();
+  const currentUser = useRequiredUser();
 
   const directions = useAsync(() => directionsApi.list(), []);
   const direction = directions.data?.find((d) => d.expertId === currentUser.id);

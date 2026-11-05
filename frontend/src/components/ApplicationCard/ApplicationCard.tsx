@@ -1,14 +1,23 @@
+import type { ReactNode } from 'react';
 import { APPLICATION_STATUS, REVIEW_STATUS, REVIEW_STATUS_LABELS, STATUS_LABELS, labelOf } from '../../config';
 import { formatDateTime } from '../../utils/format';
+import type { CardApplication } from '../../types';
 import './ApplicationCard.css';
 
+interface ApplicationCardProps {
+  application: CardApplication;
+  showParticipant?: boolean;
+  actions?: ReactNode;
+}
+
 /** Карточка заявки. actions - произвольные кнопки (зависят от роли). */
-export default function ApplicationCard({ application, showParticipant = false, actions }) {
+export default function ApplicationCard({ application, showParticipant = false, actions }: ApplicationCardProps) {
   // У отозванной заявки, которую так и не проверили, статус проверки не показываем.
+  const reviewStatus = application.reviewStatus;
   const showReview =
-    Boolean(application.reviewStatus) &&
+    !!reviewStatus &&
     (application.status !== APPLICATION_STATUS.WITHDRAWN ||
-      application.reviewStatus !== REVIEW_STATUS.PENDING);
+      reviewStatus !== REVIEW_STATUS.PENDING);
 
   const transferPending = Boolean(application.transferToDirectionId);
 
@@ -31,9 +40,9 @@ export default function ApplicationCard({ application, showParticipant = false, 
           )}
           {showReview && (
             <span
-              className={`application-card__status application-card__review--${application.reviewStatus}`}
+              className={`application-card__status application-card__review--${reviewStatus}`}
             >
-              {labelOf(REVIEW_STATUS_LABELS, application.reviewStatus)}
+              {reviewStatus && labelOf(REVIEW_STATUS_LABELS, reviewStatus)}
             </span>
           )}
         </div>

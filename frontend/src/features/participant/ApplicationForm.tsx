@@ -1,29 +1,50 @@
-import { useState } from 'react';
+import { useState, type FormEvent } from 'react';
+import { ApiError } from '../../api';
 import Field from '../../components/Field/Field';
 import Notice from '../../components/Notice/Notice';
 import Select from '../../components/Select/Select';
-import { formatDateTime, isPast } from '../../utils/format';
+import type { Application, Direction } from '../../types';
+import { errorMessage, formatDateTime, isPast } from '../../utils/format';
 import './ApplicationForm.css';
+
+export interface ApplicationFormValues {
+  directionId: string;
+  title: string;
+  abstractText: string;
+  content: string;
+}
+
+interface ApplicationFormProps {
+  directions: Direction[];
+  initial: Application | null;
+  onSubmit: (values: ApplicationFormValues) => Promise<void>;
+  onCancel: () => void;
+}
 
 /**
  * Форма подачи / редактирования заявки.
  * initial - заявка для редактирования (null - создание новой).
  * onSubmit(values) должен вернуть Promise; при ошибке форма покажет сообщение бэкенда.
  */
-export default function ApplicationForm({ directions, initial, onSubmit, onCancel }) {
+export default function ApplicationForm({
+  directions,
+  initial,
+  onSubmit,
+  onCancel,
+}: ApplicationFormProps) {
   const isEdit = Boolean(initial);
 
-  const [values, setValues] = useState({
+  const [values, setValues] = useState<ApplicationFormValues>({
     directionId: initial ? String(initial.directionId) : '',
     title: initial?.title ?? '',
     abstractText: initial?.abstractText ?? '',
     content: initial?.content ?? '',
   });
   const [submitting, setSubmitting] = useState(false);
-  const [error, setError] = useState(null);
-  const [fieldErrors, setFieldErrors] = useState({});
+  const [error, setError] = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
 
-  const setValue = (name) => (value) => setValues((prev) => ({ ...prev, [name]: value }));
+  const setValue = (name: keyof ApplicationFormValues) => (value: string) => setValues((prev) => ({ ...prev, [name]: value }));
 
   const directionOptions = directions.map((direction) => {
     const closed = isPast(direction.deadline);
@@ -36,7 +57,7 @@ export default function ApplicationForm({ directions, initial, onSubmit, onCance
     };
   });
 
-  async function handleSubmit(event) {
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setSubmitting(true);
     setError(null);
@@ -44,8 +65,8 @@ export default function ApplicationForm({ directions, initial, onSubmit, onCance
     try {
       await onSubmit(values);
     } catch (err) {
-      setError(err.message);
-      setFieldErrors(err.fields || {});
+      setError(errorMessage(err));
+      setFieldErrors(err instanceof ApiError ? err.fields : {});
     } finally {
       setSubmitting(false);
     }

@@ -1,4 +1,17 @@
+import type { ChangeEvent } from 'react';
 import './Field.css';
+
+interface FieldProps {
+  label?: string;
+  value: string;
+  onChange: (value: string) => void;
+  multiline?: boolean;
+  rows?: number;
+  maxLength?: number;
+  required?: boolean;
+  disabled?: boolean;
+  error?: string;
+}
 
 /** Текстовое поле. multiline - многострочное (textarea). onChange получает строку. */
 export default function Field({
@@ -11,14 +24,15 @@ export default function Field({
   required = false,
   disabled = false,
   error,
-}) {
+}: FieldProps) {
   const props = {
     className: 'field__control',
     value,
     maxLength,
     required,
     disabled,
-    onChange: (event) => onChange(event.target.value),
+    onChange: (event: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
+      onChange(event.target.value),
   };
 
   return (
