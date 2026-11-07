@@ -2,11 +2,12 @@ import { useMemo, useState } from 'react';
 import { directionsApi, participantApplicationsApi } from '../../api';
 import ApplicationList from '../../components/ApplicationList/ApplicationList';
 import Notice from '../../components/Notice/Notice';
-import { APPLICATION_STATUS, REVIEW_STATUS } from '../../config';
+import { REVIEW_STATUS } from '../../config';
 import { useRequiredUser } from '../../context/AuthContext';
 import { useAsync } from '../../hooks/useAsync';
 import type { Application, Direction, FlashMessage } from '../../types';
-import { errorMessage, isPast } from '../../utils/format';
+import { errorMessage } from '../../utils/format';
+import { getApplicationPermissions } from './applicationPermissions';
 import ApplicationForm, { type ApplicationFormValues } from './ApplicationForm';
 import './ParticipantPage.css';
 
@@ -30,13 +31,6 @@ export default function ParticipantPage() {
       >,
     [directions.data],
   );
-
-  const canWithdraw = (application: Application) =>
-    application.status !== APPLICATION_STATUS.WITHDRAWN &&
-    !isPast(directionsById[application.directionId]?.deadline);
-
-  const canEdit = (application: Application) =>
-    canWithdraw(application) && application.reviewStatus === REVIEW_STATUS.PENDING;
 
   const resetForm = () => {
     setEditing(null);
@@ -105,30 +99,37 @@ export default function ParticipantPage() {
           <ApplicationList
             applications={applications.data}
             emptyText="У вас пока нет заявок"
-            renderActions={(application) => (
-              <>
-                <button
-                  type="button"
-                  disabled={!canEdit(application)}
-                  title={
-                    application.reviewStatus !== REVIEW_STATUS.PENDING
-                      ? 'Заявка уже проверена - её можно только отозвать'
-                      : undefined
-                  }
-                  onClick={() => startEditing(application)}
-                >
-                  Редактировать
-                </button>
-                <button
-                  type="button"
-                  className="danger"
-                  disabled={!canWithdraw(application)}
-                  onClick={() => handleWithdraw(application)}
-                >
-                  Отозвать
-                </button>
-              </>
-            )}
+            renderActions={(application) => {
+              const permissions = getApplicationPermissions(
+                application,
+                directionsById[application.directionId],
+              );
+
+              return (
+                <>
+                  <button
+                    type="button"
+                    disabled={!permissions.canEdit}
+                    title={
+                      application.reviewStatus !== REVIEW_STATUS.PENDING
+                        ? 'Заявка уже проверена - её можно только отозвать'
+                        : undefined
+                    }
+                    onClick={() => startEditing(application)}
+                  >
+                    Редактировать
+                  </button>
+                  <button
+                    type="button"
+                    className="danger"
+                    disabled={!permissions.canWithdraw}
+                    onClick={() => handleWithdraw(application)}
+                  >
+                    Отозвать
+                  </button>
+                </>
+              );
+            }}
           />
         )}
       </section>

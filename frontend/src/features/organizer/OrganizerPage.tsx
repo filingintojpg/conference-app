@@ -8,9 +8,7 @@ import {
 import ApplicationList from '../../components/ApplicationList/ApplicationList';
 import Notice from '../../components/Notice/Notice';
 import Select from '../../components/Select/Select';
-import TransferAction from './TransferAction';
 import {
-  APPLICATION_STATUS,
   REVIEW_STATUS,
   REVIEW_STATUS_LABELS,
   STATUS_LABELS,
@@ -20,6 +18,7 @@ import { useRequiredUser } from '../../context/AuthContext';
 import { useAsync } from '../../hooks/useAsync';
 import type { Application, FlashMessage } from '../../types';
 import { errorMessage } from '../../utils/format';
+import OrganizerApplicationActions from './OrganizerApplicationActions';
 import './OrganizerPage.css';
 
 export default function OrganizerPage() {
@@ -29,77 +28,75 @@ export default function OrganizerPage() {
   const reviewStatuses = useAsync(() => reviewStatusesApi.list(), []);
 
   const [directionId, setDirectionId] = useState('');
-
   const [status, setStatus] = useState('');
   const [reviewStatus, setReviewStatus] = useState<string>(REVIEW_STATUS.PENDING);
   const [message, setMessage] = useState<FlashMessage | null>(null);
-  const [reviewingId, setReviewingId] = useState<number | null>(null);
+  const [processingApplicationId, setProcessingApplicationId] = useState<number | null>(null);
 
   const myDirections = useMemo(
-    () => (directions.data ?? []).filter((d) => d.organizerId === currentUser.id),
+    () => (directions.data ?? []).filter(({ organizerId }) => organizerId === currentUser.id),
     [directions.data, currentUser.id],
   );
 
-  const selectedDirectionId =
-    directionId && myDirections.some((d) => String(d.id) === directionId)
-      ? directionId
-      : myDirections[0]
-        ? String(myDirections[0].id)
-        : '';
+  const selectedDirectionId = useMemo(() => {
+    const selectionIsValid = myDirections.some(({ id }) => String(id) === directionId);
+    if (selectionIsValid) return directionId;
+    return myDirections[0] ? String(myDirections[0].id) : '';
+  }, [directionId, myDirections]);
 
   const applications = useAsync(
     () =>
-      organizerApplicationsApi.list(Number(selectedDirectionId), status, reviewStatus),
+      organizerApplicationsApi.list(
+        Number(selectedDirectionId),
+        status,
+        reviewStatus,
+      ),
     [currentUser.id, selectedDirectionId, status, reviewStatus],
     { enabled: Boolean(selectedDirectionId) },
   );
 
-  async function run(
+  async function executeApplicationAction(
     application: Application,
-    call: () => Promise<unknown>,
+    action: () => Promise<unknown>,
     successText: string,
   ) {
-    setReviewingId(application.id);
+    setProcessingApplicationId(application.id);
     setMessage(null);
+
     try {
-      await call();
+      await action();
       setMessage({ type: 'success', text: successText });
-    } catch (err) {
-      setMessage({ type: 'error', text: errorMessage(err) });
+    } catch (error) {
+      setMessage({ type: 'error', text: errorMessage(error) });
     } finally {
-      setReviewingId(null);
+      setProcessingApplicationId(null);
       applications.reload();
     }
   }
 
-  const review = (
-    application: Application,
-    action: 'approve' | 'reject',
-    successText: string,
-  ) =>
-    run(application, () => organizerApplicationsApi[action](application.id), successText);
+  function reviewApplication(application: Application, decision: 'approve' | 'reject') {
+    const successText =
+      decision === 'approve' ? 'Заявка прошла проверку' : 'Заявка не прошла проверку';
 
-  const transfer = (application: Application, targetDirectionId: string) => {
-    const target = (directions.data ?? []).find((d) => String(d.id) === String(targetDirectionId));
-    return run(
+    return executeApplicationAction(
+      application,
+      () => organizerApplicationsApi[decision](application.id),
+      successText,
+    );
+  }
+
+  function transferApplication(application: Application, targetDirectionId: string) {
+    const targetDirection = directions.data?.find(
+      ({ id }) => String(id) === targetDirectionId,
+    );
+    const directionName = targetDirection?.name ?? targetDirectionId;
+
+    return executeApplicationAction(
       application,
       () => organizerApplicationsApi.transfer(application.id, Number(targetDirectionId)),
-      `Заявка передана на направление «${target?.name ?? targetDirectionId}», ожидает решения организатора`,
+      `Заявка передана на направление «${directionName}», ожидает решения организатора`,
     );
-  };
-
-  const hasPendingTransfer = (application: Application) => Boolean(application.transferToDirectionId);
-
-  const isIncomingTransfer = (application: Application) =>
-    hasPendingTransfer(application) &&
-    String(application.transferToDirectionId) === selectedDirectionId;
-
-  const isWithdrawn = (application: Application) => application.status === APPLICATION_STATUS.WITHDRAWN;
-
-  const canReview = (application: Application) =>
-    !isWithdrawn(application) &&
-    application.reviewStatus === REVIEW_STATUS.PENDING &&
-    !hasPendingTransfer(application);
+  }
 
   const loadError = directions.error || statuses.error || reviewStatuses.error;
   if (loadError) return <Notice type="error">{loadError.message}</Notice>;
@@ -107,6 +104,19 @@ export default function OrganizerPage() {
   if (myDirections.length === 0) {
     return <Notice type="info">У этого организатора нет направлений</Notice>;
   }
+
+  const directionOptions = myDirections.map(({ id, name }) => ({
+    value: String(id),
+    label: name,
+  }));
+  const reviewStatusOptions = reviewStatuses.data.map((value) => ({
+    value,
+    label: labelOf(REVIEW_STATUS_LABELS, value),
+  }));
+  const statusOptions = statuses.data.map((value) => ({
+    value,
+    label: labelOf(STATUS_LABELS, value),
+  }));
 
   return (
     <div className="organizer-page">
@@ -117,24 +127,21 @@ export default function OrganizerPage() {
           label="Направление"
           value={selectedDirectionId}
           onChange={setDirectionId}
-          options={myDirections.map((d) => ({ value: String(d.id), label: d.name }))}
+          options={directionOptions}
         />
         <Select
           label="Проверка"
           value={reviewStatus}
           onChange={setReviewStatus}
           placeholder="Все"
-          options={reviewStatuses.data.map((s) => ({
-            value: s,
-            label: labelOf(REVIEW_STATUS_LABELS, s),
-          }))}
+          options={reviewStatusOptions}
         />
         <Select
           label="Статус заявки"
           value={status}
           onChange={setStatus}
           placeholder="Все"
-          options={statuses.data.map((s) => ({ value: s, label: labelOf(STATUS_LABELS, s) }))}
+          options={statusOptions}
         />
       </div>
 
@@ -146,74 +153,31 @@ export default function OrganizerPage() {
           applications={applications.data}
           showParticipant
           emptyText="Заявок с такими параметрами нет"
-          renderActions={(application) => {
-            const busy = reviewingId === application.id;
-
-            if (isIncomingTransfer(application)) {
-              return (
-                <>
-                  {!isWithdrawn(application) && (
-                    <button
-                      type="button"
-                      className="primary"
-                      disabled={busy}
-                      onClick={() =>
-                        run(
-                          application,
-                          () => organizerApplicationsApi.acceptTransfer(application.id),
-                          'Заявка принята на данное направление',
-                        )
-                      }
-                    >
-                      Принять на данное направление
-                    </button>
-                  )}
-                  <button
-                    type="button"
-                    className="danger"
-                    disabled={busy}
-                    onClick={() =>
-                      run(
-                        application,
-                        () => organizerApplicationsApi.rejectTransfer(application.id),
-                        'Передача заявки отвергнута, заявка осталась на прежнем направлении',
-                      )
-                    }
-                  >
-                    Отвергнуть
-                  </button>
-                </>
-              );
-            }
-
-            if (!canReview(application)) return null;
-
-            return (
-              <>
-                <button
-                  type="button"
-                  className="primary"
-                  disabled={busy}
-                  onClick={() => review(application, 'approve', 'Заявка прошла проверку')}
-                >
-                  Подтвердить
-                </button>
-                <button
-                  type="button"
-                  className="danger"
-                  disabled={busy}
-                  onClick={() => review(application, 'reject', 'Заявка не прошла проверку')}
-                >
-                  Отклонить
-                </button>
-                <TransferAction
-                  directions={(directions.data ?? []).filter((d) => d.id !== application.directionId)}
-                  disabled={busy}
-                  onTransfer={(targetId) => transfer(application, targetId)}
-                />
-              </>
-            );
-          }}
+          renderActions={(application) => (
+            <OrganizerApplicationActions
+              application={application}
+              directions={directions.data ?? []}
+              selectedDirectionId={selectedDirectionId}
+              busy={processingApplicationId === application.id}
+              onApprove={(item) => reviewApplication(item, 'approve')}
+              onReject={(item) => reviewApplication(item, 'reject')}
+              onAcceptTransfer={(item) =>
+                executeApplicationAction(
+                  item,
+                  () => organizerApplicationsApi.acceptTransfer(item.id),
+                  'Заявка принята на данное направление',
+                )
+              }
+              onRejectTransfer={(item) =>
+                executeApplicationAction(
+                  item,
+                  () => organizerApplicationsApi.rejectTransfer(item.id),
+                  'Передача заявки отвергнута, заявка осталась на прежнем направлении',
+                )
+              }
+              onTransfer={transferApplication}
+            />
+          )}
         />
       )}
     </div>
