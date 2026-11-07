@@ -62,3 +62,22 @@ export interface FlashMessage {
   type: NoticeType;
   text: string;
 }
+
+export interface AuthResponse {
+  accessToken: string;
+  tokenType: 'Bearer';
+  /** Время жизни токена в секундах. */
+  expiresIn: number;
+  user: User;
+}
+
+export interface LoginPayload {
+  email: string;
+  password: string;
+}
+
+export interface RegisterPayload extends LoginPayload {
+  lastName: string;
+  firstName: string;
+  middleName?: string;
+}

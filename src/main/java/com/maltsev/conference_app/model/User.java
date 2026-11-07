@@ -33,14 +33,18 @@ public class User {
     @Column(nullable = false, length = 30)
     private Role role;
 
+    @Column(name = "password_hash", nullable = false, length = 100)
+    private String passwordHash;
+
     public User(String lastName, String firstName, String middleName,
-                String emailLocal, String emailDomain, Role role) {
+                String emailLocal, String emailDomain, Role role, String passwordHash) {
         this.lastName = lastName;
         this.firstName = firstName;
         this.middleName = middleName;
         this.emailLocal = emailLocal;
         this.emailDomain = emailDomain;
         this.role = role;
+        this.passwordHash = passwordHash;
     }
 
     public String getFullName() {

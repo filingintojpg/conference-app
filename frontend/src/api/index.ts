@@ -1,6 +1,12 @@
-export { ApiError } from './client';
+export {
+  ApiError,
+  clearAccessToken,
+  getAccessToken,
+  setAccessToken,
+  setUnauthorizedHandler,
+} from './client';
+export { authApi } from './auth';
 export { directionsApi } from './directions';
-export { usersApi } from './users';
 export { statusesApi } from './statuses';
 export { reviewStatusesApi } from './reviewStatuses';
 export { participantApplicationsApi } from './participantApplications';

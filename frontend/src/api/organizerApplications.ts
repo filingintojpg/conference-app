@@ -3,32 +3,23 @@ import { request } from './client';
 
 export const organizerApplicationsApi = {
   // status и reviewStatus необязательны: пустое значение означает "любой".
-  list: (userId: number, directionId: number, status: string, reviewStatus: string) =>
+  list: (directionId: number, status: string, reviewStatus: string) =>
     request<Application[]>('/organizer/applications', {
-      userId,
       params: { directionId, status, reviewStatus },
     }),
-  get: (userId: number, id: number) =>
-    request<Application>(`/organizer/applications/${id}`, { userId }),
-  approve: (userId: number, id: number) =>
-    request<Application>(`/organizer/applications/${id}/approve`, { method: 'POST', userId }),
-  reject: (userId: number, id: number) =>
-    request<Application>(`/organizer/applications/${id}/reject`, { method: 'POST', userId }),
+  get: (id: number) => request<Application>(`/organizer/applications/${id}`),
+  approve: (id: number) =>
+    request<Application>(`/organizer/applications/${id}/approve`, { method: 'POST' }),
+  reject: (id: number) =>
+    request<Application>(`/organizer/applications/${id}/reject`, { method: 'POST' }),
   // Передача заявки на другое направление и ответ организатора-получателя.
-  transfer: (userId: number, id: number, targetDirectionId: number) =>
+  transfer: (id: number, targetDirectionId: number) =>
     request<Application>(`/organizer/applications/${id}/transfer`, {
       method: 'POST',
-      userId,
       body: { targetDirectionId },
     }),
-  acceptTransfer: (userId: number, id: number) =>
-    request<Application>(`/organizer/applications/${id}/transfer/accept`, {
-      method: 'POST',
-      userId,
-    }),
-  rejectTransfer: (userId: number, id: number) =>
-    request<Application>(`/organizer/applications/${id}/transfer/reject`, {
-      method: 'POST',
-      userId,
-    }),
+  acceptTransfer: (id: number) =>
+    request<Application>(`/organizer/applications/${id}/transfer/accept`, { method: 'POST' }),
+  rejectTransfer: (id: number) =>
+    request<Application>(`/organizer/applications/${id}/transfer/reject`, { method: 'POST' }),
 };

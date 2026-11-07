@@ -27,15 +27,14 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 /**
- * Проверяем HTTP-слой организатора: адреса, заголовок, параметры запроса, JSON, статусы и тексты ошибок.
+ * Проверяем HTTP-слой организатора: адреса, пользователь, параметры запроса, JSON, статусы и тексты ошибок.
  * Сервис подменён заглушкой, база и весь Spring-контекст не поднимаются.
  * <p>
- * Проверка роли (RoleInterceptor) в этом тесте не участвует: она обращается к базе
- * и в MockMvc standalone-режиме не подключена. Здесь проверяется только сам контроллер.
+ * Проверка роли (Spring Security, см. SecurityConfig) в MockMvc standalone-режиме не подключена,
+ * вошедшего пользователя имитирует Principal. Здесь проверяется только сам контроллер.
  */
 @ExtendWith(MockitoExtension.class)
 class OrganizerApplicationControllerTest {
-    private static final String HEADER = "X-User-Id";
     private static final String LIST_URL = "/organizer/applications";
 
     @Mock
@@ -68,7 +67,7 @@ class OrganizerApplicationControllerTest {
                 .thenReturn(List.of(response(1L, ApplicationStatus.SUBMITTED), response(2L, ApplicationStatus.SUBMITTED)));
 
         mockMvc.perform(get(LIST_URL)
-                        .header(HEADER, "100")
+                        .principal(Auth.user("100"))
                         .param("directionId", "10")
                         .param("status", "SUBMITTED"))
                 .andExpect(status().isOk())
@@ -85,7 +84,7 @@ class OrganizerApplicationControllerTest {
                 .thenReturn(List.of(response(1L, ApplicationStatus.SUBMITTED)));
 
         mockMvc.perform(get(LIST_URL)
-                        .header(HEADER, "100")
+                        .principal(Auth.user("100"))
                         .param("directionId", "10")
                         .param("status", "SUBMITTED"))
                 .andExpect(status().isOk())
@@ -104,11 +103,11 @@ class OrganizerApplicationControllerTest {
     }
 
     @Test
-    void list_success_passesHeaderAndParametersToService() throws Exception {
+    void list_success_passesUserIdAndParametersToService() throws Exception {
         when(service.list(100L, 10L, ApplicationStatus.EDITED, null)).thenReturn(List.of());
 
         mockMvc.perform(get(LIST_URL)
-                        .header(HEADER, "100")
+                        .principal(Auth.user("100"))
                         .param("directionId", "10")
                         .param("status", "EDITED"))
                 .andExpect(status().isOk());
@@ -122,7 +121,7 @@ class OrganizerApplicationControllerTest {
         when(service.list(100L, 10L, ApplicationStatus.SUBMITTED, null)).thenReturn(List.of());
 
         mockMvc.perform(get(LIST_URL)
-                        .header(HEADER, "100")
+                        .principal(Auth.user("100"))
                         .param("directionId", "10")
                         .param("status", "SUBMITTED"))
                 .andExpect(status().isOk())
@@ -136,7 +135,7 @@ class OrganizerApplicationControllerTest {
         when(service.list(100L, 10L, applicationStatus, null)).thenReturn(List.of(response(1L, applicationStatus)));
 
         mockMvc.perform(get(LIST_URL)
-                        .header(HEADER, "100")
+                        .principal(Auth.user("100"))
                         .param("directionId", "10")
                         .param("status", applicationStatus.name()))
                 .andExpect(status().isOk())
@@ -144,24 +143,24 @@ class OrganizerApplicationControllerTest {
     }
 
     @Test
-    void list_missingHeader_returns400() throws Exception {
+    void list_missingAuthentication_returns401() throws Exception {
         mockMvc.perform(get(LIST_URL)
                         .param("directionId", "10")
                         .param("status", "SUBMITTED"))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.error").value("Header X-User-Id is required"));
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.error").value("Authentication required"));
 
         verifyNoInteractions(service);
     }
 
     @Test
-    void list_headerIsNotANumber_returns400() throws Exception {
+    void list_tokenSubjectIsNotANumber_returns401() throws Exception {
         mockMvc.perform(get(LIST_URL)
-                        .header(HEADER, "abc")
+                        .principal(Auth.user("abc"))
                         .param("directionId", "10")
                         .param("status", "SUBMITTED"))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.error").value("Invalid value for 'X-User-Id'"));
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.error").value("Invalid token"));
 
         verifyNoInteractions(service);
     }
@@ -169,7 +168,7 @@ class OrganizerApplicationControllerTest {
     @Test
     void list_missingDirectionId_returns400() throws Exception {
         mockMvc.perform(get(LIST_URL)
-                        .header(HEADER, "100")
+                        .principal(Auth.user("100"))
                         .param("status", "SUBMITTED"))
                 .andExpect(status().isBadRequest());
 
@@ -181,7 +180,7 @@ class OrganizerApplicationControllerTest {
         when(service.list(100L, 10L, null, null)).thenReturn(List.of(response(1L, ApplicationStatus.EDITED)));
 
         mockMvc.perform(get(LIST_URL)
-                        .header(HEADER, "100")
+                        .principal(Auth.user("100"))
                         .param("directionId", "10"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.length()").value(1));
@@ -189,7 +188,7 @@ class OrganizerApplicationControllerTest {
 
     @Test
     void list_noParameters_returns400() throws Exception {
-        mockMvc.perform(get(LIST_URL).header(HEADER, "100"))
+        mockMvc.perform(get(LIST_URL).principal(Auth.user("100")))
                 .andExpect(status().isBadRequest());
 
         verifyNoInteractions(service);
@@ -198,7 +197,7 @@ class OrganizerApplicationControllerTest {
     @Test
     void list_directionIdIsNotANumber_returns400() throws Exception {
         mockMvc.perform(get(LIST_URL)
-                        .header(HEADER, "100")
+                        .principal(Auth.user("100"))
                         .param("directionId", "abc")
                         .param("status", "SUBMITTED"))
                 .andExpect(status().isBadRequest())
@@ -210,7 +209,7 @@ class OrganizerApplicationControllerTest {
     @Test
     void list_unknownStatus_returns400() throws Exception {
         mockMvc.perform(get(LIST_URL)
-                        .header(HEADER, "100")
+                        .principal(Auth.user("100"))
                         .param("directionId", "10")
                         .param("status", "UNKNOWN"))
                 .andExpect(status().isBadRequest())
@@ -222,7 +221,7 @@ class OrganizerApplicationControllerTest {
     @Test
     void list_statusInLowerCase_returns400() throws Exception {
         mockMvc.perform(get(LIST_URL)
-                        .header(HEADER, "100")
+                        .principal(Auth.user("100"))
                         .param("directionId", "10")
                         .param("status", "submitted"))
                 .andExpect(status().isBadRequest())
@@ -237,7 +236,7 @@ class OrganizerApplicationControllerTest {
                 .thenThrow(new NotFoundException("Direction not found: 999"));
 
         mockMvc.perform(get(LIST_URL)
-                        .header(HEADER, "100")
+                        .principal(Auth.user("100"))
                         .param("directionId", "999")
                         .param("status", "SUBMITTED"))
                 .andExpect(status().isNotFound())
@@ -250,7 +249,7 @@ class OrganizerApplicationControllerTest {
                 .thenThrow(new ForbiddenException("Direction belongs to another organizer"));
 
         mockMvc.perform(get(LIST_URL)
-                        .header(HEADER, "200")
+                        .principal(Auth.user("200"))
                         .param("directionId", "10")
                         .param("status", "SUBMITTED"))
                 .andExpect(status().isForbidden())
@@ -260,7 +259,7 @@ class OrganizerApplicationControllerTest {
     @Test
     void list_postMethodIsNotAllowed_returns405() throws Exception {
         mockMvc.perform(post(LIST_URL)
-                        .header(HEADER, "100")
+                        .principal(Auth.user("100"))
                         .param("directionId", "10")
                         .param("status", "SUBMITTED"))
                 .andExpect(status().isMethodNotAllowed());
@@ -276,7 +275,7 @@ class OrganizerApplicationControllerTest {
     void get_success_returns200WithApplicationJson() throws Exception {
         when(service.get(5L, 100L)).thenReturn(response(5L, ApplicationStatus.SUBMITTED));
 
-        mockMvc.perform(get(LIST_URL + "/5").header(HEADER, "100"))
+        mockMvc.perform(get(LIST_URL + "/5").principal(Auth.user("100")))
                 .andExpect(status().isOk())
                 .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
                 .andExpect(jsonPath("$.id").value(5))
@@ -297,7 +296,7 @@ class OrganizerApplicationControllerTest {
     void get_success_passesIdAndHeaderToService() throws Exception {
         when(service.get(5L, 100L)).thenReturn(response(5L, ApplicationStatus.SUBMITTED));
 
-        mockMvc.perform(get(LIST_URL + "/5").header(HEADER, "100"))
+        mockMvc.perform(get(LIST_URL + "/5").principal(Auth.user("100")))
                 .andExpect(status().isOk());
 
         verify(service).get(5L, 100L);
@@ -309,32 +308,32 @@ class OrganizerApplicationControllerTest {
     void get_everyStatusIsReturnedInJson(ApplicationStatus applicationStatus) throws Exception {
         when(service.get(5L, 100L)).thenReturn(response(5L, applicationStatus));
 
-        mockMvc.perform(get(LIST_URL + "/5").header(HEADER, "100"))
+        mockMvc.perform(get(LIST_URL + "/5").principal(Auth.user("100")))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value(applicationStatus.name()));
     }
 
     @Test
-    void get_missingHeader_returns400() throws Exception {
+    void get_missingAuthentication_returns401() throws Exception {
         mockMvc.perform(get(LIST_URL + "/5"))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.error").value("Header X-User-Id is required"));
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.error").value("Authentication required"));
 
         verifyNoInteractions(service);
     }
 
     @Test
-    void get_headerIsNotANumber_returns400() throws Exception {
-        mockMvc.perform(get(LIST_URL + "/5").header(HEADER, "abc"))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.error").value("Invalid value for 'X-User-Id'"));
+    void get_tokenSubjectIsNotANumber_returns401() throws Exception {
+        mockMvc.perform(get(LIST_URL + "/5").principal(Auth.user("abc")))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.error").value("Invalid token"));
 
         verifyNoInteractions(service);
     }
 
     @Test
     void get_idInUrlIsNotANumber_returns400() throws Exception {
-        mockMvc.perform(get(LIST_URL + "/abc").header(HEADER, "100"))
+        mockMvc.perform(get(LIST_URL + "/abc").principal(Auth.user("100")))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.error").value("Invalid value for 'id'"));
 
@@ -345,7 +344,7 @@ class OrganizerApplicationControllerTest {
     void get_applicationNotFound_returns404() throws Exception {
         when(service.get(999L, 100L)).thenThrow(new NotFoundException("Application not found: 999"));
 
-        mockMvc.perform(get(LIST_URL + "/999").header(HEADER, "100"))
+        mockMvc.perform(get(LIST_URL + "/999").principal(Auth.user("100")))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.error").value("Application not found: 999"));
     }
@@ -354,14 +353,14 @@ class OrganizerApplicationControllerTest {
     void get_directionOfAnotherOrganizer_returns403() throws Exception {
         when(service.get(5L, 200L)).thenThrow(new ForbiddenException("Direction belongs to another organizer"));
 
-        mockMvc.perform(get(LIST_URL + "/5").header(HEADER, "200"))
+        mockMvc.perform(get(LIST_URL + "/5").principal(Auth.user("200")))
                 .andExpect(status().isForbidden())
                 .andExpect(jsonPath("$.error").value("Direction belongs to another organizer"));
     }
 
     @Test
     void get_postMethodIsNotAllowed_returns405() throws Exception {
-        mockMvc.perform(post(LIST_URL + "/5").header(HEADER, "100"))
+        mockMvc.perform(post(LIST_URL + "/5").principal(Auth.user("100")))
                 .andExpect(status().isMethodNotAllowed());
 
         verifyNoInteractions(service);
@@ -369,7 +368,7 @@ class OrganizerApplicationControllerTest {
 
     @Test
     void get_deleteMethodIsNotAllowed_returns405() throws Exception {
-        mockMvc.perform(delete(LIST_URL + "/5").header(HEADER, "100"))
+        mockMvc.perform(delete(LIST_URL + "/5").principal(Auth.user("100")))
                 .andExpect(status().isMethodNotAllowed());
 
         verifyNoInteractions(service);
@@ -381,7 +380,7 @@ class OrganizerApplicationControllerTest {
 
     @Test
     void unknownUrl_returns404() throws Exception {
-        mockMvc.perform(get("/organizer/unknown").header(HEADER, "100"))
+        mockMvc.perform(get("/organizer/unknown").principal(Auth.user("100")))
                 .andExpect(status().isNotFound());
 
         verifyNoInteractions(service);
@@ -403,7 +402,7 @@ class OrganizerApplicationControllerTest {
                 .thenReturn(List.of(reviewed(1L, ReviewStatus.REJECTED)));
 
         mockMvc.perform(get(LIST_URL)
-                        .header(HEADER, "100")
+                        .principal(Auth.user("100"))
                         .param("directionId", "10")
                         .param("reviewStatus", "REJECTED"))
                 .andExpect(status().isOk())
@@ -415,7 +414,7 @@ class OrganizerApplicationControllerTest {
         when(service.list(100L, 10L, ApplicationStatus.EDITED, ReviewStatus.PENDING)).thenReturn(List.of());
 
         mockMvc.perform(get(LIST_URL)
-                        .header(HEADER, "100")
+                        .principal(Auth.user("100"))
                         .param("directionId", "10")
                         .param("status", "EDITED")
                         .param("reviewStatus", "PENDING"))
@@ -427,7 +426,7 @@ class OrganizerApplicationControllerTest {
     @Test
     void list_unknownReviewStatus_returns400() throws Exception {
         mockMvc.perform(get(LIST_URL)
-                        .header(HEADER, "100")
+                        .principal(Auth.user("100"))
                         .param("directionId", "10")
                         .param("reviewStatus", "UNKNOWN"))
                 .andExpect(status().isBadRequest())
@@ -440,7 +439,7 @@ class OrganizerApplicationControllerTest {
     void approve_success_returnsApplicationWithApprovedStatus() throws Exception {
         when(service.approve(5L, 100L)).thenReturn(reviewed(5L, ReviewStatus.APPROVED));
 
-        mockMvc.perform(post(LIST_URL + "/5/approve").header(HEADER, "100"))
+        mockMvc.perform(post(LIST_URL + "/5/approve").principal(Auth.user("100")))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(5))
                 .andExpect(jsonPath("$.reviewStatus").value("APPROVED"));
@@ -453,7 +452,7 @@ class OrganizerApplicationControllerTest {
     void reject_success_returnsApplicationWithRejectedStatus() throws Exception {
         when(service.reject(5L, 100L)).thenReturn(reviewed(5L, ReviewStatus.REJECTED));
 
-        mockMvc.perform(post(LIST_URL + "/5/reject").header(HEADER, "100"))
+        mockMvc.perform(post(LIST_URL + "/5/reject").principal(Auth.user("100")))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.reviewStatus").value("REJECTED"));
 
@@ -462,10 +461,10 @@ class OrganizerApplicationControllerTest {
     }
 
     @Test
-    void approve_missingHeader_returns400() throws Exception {
+    void approve_missingAuthentication_returns401() throws Exception {
         mockMvc.perform(post(LIST_URL + "/5/approve"))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.error").value("Header X-User-Id is required"));
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.error").value("Authentication required"));
 
         verifyNoInteractions(service);
     }
@@ -474,7 +473,7 @@ class OrganizerApplicationControllerTest {
     void approve_applicationNotFound_returns404() throws Exception {
         when(service.approve(999L, 100L)).thenThrow(new NotFoundException("Application not found: 999"));
 
-        mockMvc.perform(post(LIST_URL + "/999/approve").header(HEADER, "100"))
+        mockMvc.perform(post(LIST_URL + "/999/approve").principal(Auth.user("100")))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.error").value("Application not found: 999"));
     }
@@ -483,7 +482,7 @@ class OrganizerApplicationControllerTest {
     void reject_directionOfAnotherOrganizer_returns403() throws Exception {
         when(service.reject(5L, 200L)).thenThrow(new ForbiddenException("Direction belongs to another organizer"));
 
-        mockMvc.perform(post(LIST_URL + "/5/reject").header(HEADER, "200"))
+        mockMvc.perform(post(LIST_URL + "/5/reject").principal(Auth.user("200")))
                 .andExpect(status().isForbidden())
                 .andExpect(jsonPath("$.error").value("Direction belongs to another organizer"));
     }
@@ -492,14 +491,14 @@ class OrganizerApplicationControllerTest {
     void approve_alreadyReviewed_returns409() throws Exception {
         when(service.approve(5L, 100L)).thenThrow(new ConflictException("Application has already been reviewed"));
 
-        mockMvc.perform(post(LIST_URL + "/5/approve").header(HEADER, "100"))
+        mockMvc.perform(post(LIST_URL + "/5/approve").principal(Auth.user("100")))
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.error").value("Application has already been reviewed"));
     }
 
     @Test
     void approve_getMethodIsNotAllowed_returns405() throws Exception {
-        mockMvc.perform(get(LIST_URL + "/5/approve").header(HEADER, "100"))
+        mockMvc.perform(get(LIST_URL + "/5/approve").principal(Auth.user("100")))
                 .andExpect(status().isMethodNotAllowed());
 
         verifyNoInteractions(service);
@@ -521,7 +520,7 @@ class OrganizerApplicationControllerTest {
         when(service.transfer(5L, 100L, 20L)).thenReturn(transferred(5L, 10L, 20L));
 
         mockMvc.perform(post(LIST_URL + "/5/transfer")
-                        .header(HEADER, "100")
+                        .principal(Auth.user("100"))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"targetDirectionId\": 20}"))
                 .andExpect(status().isOk())
@@ -539,7 +538,7 @@ class OrganizerApplicationControllerTest {
     @Test
     void transfer_missingTargetDirection_returns400() throws Exception {
         mockMvc.perform(post(LIST_URL + "/5/transfer")
-                        .header(HEADER, "100")
+                        .principal(Auth.user("100"))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{}"))
                 .andExpect(status().isBadRequest())
@@ -550,19 +549,19 @@ class OrganizerApplicationControllerTest {
 
     @Test
     void transfer_missingBody_returns400() throws Exception {
-        mockMvc.perform(post(LIST_URL + "/5/transfer").header(HEADER, "100"))
+        mockMvc.perform(post(LIST_URL + "/5/transfer").principal(Auth.user("100")))
                 .andExpect(status().isBadRequest());
 
         verifyNoInteractions(service);
     }
 
     @Test
-    void transfer_missingHeader_returns400() throws Exception {
+    void transfer_missingAuthentication_returns401() throws Exception {
         mockMvc.perform(post(LIST_URL + "/5/transfer")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"targetDirectionId\": 20}"))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.error").value("Header X-User-Id is required"));
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.error").value("Authentication required"));
 
         verifyNoInteractions(service);
     }
@@ -572,7 +571,7 @@ class OrganizerApplicationControllerTest {
         when(service.transfer(5L, 100L, 99L)).thenThrow(new NotFoundException("Direction not found: 99"));
 
         mockMvc.perform(post(LIST_URL + "/5/transfer")
-                        .header(HEADER, "100")
+                        .principal(Auth.user("100"))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"targetDirectionId\": 99}"))
                 .andExpect(status().isNotFound())
@@ -584,7 +583,7 @@ class OrganizerApplicationControllerTest {
         when(service.transfer(5L, 200L, 20L)).thenThrow(new ForbiddenException("Direction belongs to another organizer"));
 
         mockMvc.perform(post(LIST_URL + "/5/transfer")
-                        .header(HEADER, "200")
+                        .principal(Auth.user("200"))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"targetDirectionId\": 20}"))
                 .andExpect(status().isForbidden())
@@ -597,7 +596,7 @@ class OrganizerApplicationControllerTest {
                 .thenThrow(new ConflictException("Application is already waiting for a transfer decision"));
 
         mockMvc.perform(post(LIST_URL + "/5/transfer")
-                        .header(HEADER, "100")
+                        .principal(Auth.user("100"))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"targetDirectionId\": 20}"))
                 .andExpect(status().isConflict())
@@ -608,7 +607,7 @@ class OrganizerApplicationControllerTest {
     void acceptTransfer_success_returnsApplicationInNewDirection() throws Exception {
         when(service.acceptTransfer(5L, 300L)).thenReturn(transferred(5L, 20L, null));
 
-        mockMvc.perform(post(LIST_URL + "/5/transfer/accept").header(HEADER, "300"))
+        mockMvc.perform(post(LIST_URL + "/5/transfer/accept").principal(Auth.user("300")))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(5))
                 .andExpect(jsonPath("$.directionId").value(20))
@@ -622,7 +621,7 @@ class OrganizerApplicationControllerTest {
     void acceptTransfer_noPendingTransfer_returns409() throws Exception {
         when(service.acceptTransfer(5L, 300L)).thenThrow(new ConflictException("Application has no pending transfer"));
 
-        mockMvc.perform(post(LIST_URL + "/5/transfer/accept").header(HEADER, "300"))
+        mockMvc.perform(post(LIST_URL + "/5/transfer/accept").principal(Auth.user("300")))
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.error").value("Application has no pending transfer"));
     }
@@ -631,16 +630,16 @@ class OrganizerApplicationControllerTest {
     void acceptTransfer_notTheTargetOrganizer_returns403() throws Exception {
         when(service.acceptTransfer(5L, 100L)).thenThrow(new ForbiddenException("Direction belongs to another organizer"));
 
-        mockMvc.perform(post(LIST_URL + "/5/transfer/accept").header(HEADER, "100"))
+        mockMvc.perform(post(LIST_URL + "/5/transfer/accept").principal(Auth.user("100")))
                 .andExpect(status().isForbidden())
                 .andExpect(jsonPath("$.error").value("Direction belongs to another organizer"));
     }
 
     @Test
-    void acceptTransfer_missingHeader_returns400() throws Exception {
+    void acceptTransfer_missingAuthentication_returns401() throws Exception {
         mockMvc.perform(post(LIST_URL + "/5/transfer/accept"))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.error").value("Header X-User-Id is required"));
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.error").value("Authentication required"));
 
         verifyNoInteractions(service);
     }
@@ -649,7 +648,7 @@ class OrganizerApplicationControllerTest {
     void rejectTransfer_success_returnsApplicationInSourceDirection() throws Exception {
         when(service.rejectTransfer(5L, 300L)).thenReturn(transferred(5L, 10L, null));
 
-        mockMvc.perform(post(LIST_URL + "/5/transfer/reject").header(HEADER, "300"))
+        mockMvc.perform(post(LIST_URL + "/5/transfer/reject").principal(Auth.user("300")))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.directionId").value(10))
                 .andExpect(jsonPath("$.transferToDirectionId").doesNotExist());
@@ -662,18 +661,18 @@ class OrganizerApplicationControllerTest {
     void rejectTransfer_applicationNotFound_returns404() throws Exception {
         when(service.rejectTransfer(999L, 300L)).thenThrow(new NotFoundException("Application not found: 999"));
 
-        mockMvc.perform(post(LIST_URL + "/999/transfer/reject").header(HEADER, "300"))
+        mockMvc.perform(post(LIST_URL + "/999/transfer/reject").principal(Auth.user("300")))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.error").value("Application not found: 999"));
     }
 
     @Test
     void transferEndpoints_getMethodIsNotAllowed_returns405() throws Exception {
-        mockMvc.perform(get(LIST_URL + "/5/transfer").header(HEADER, "100"))
+        mockMvc.perform(get(LIST_URL + "/5/transfer").principal(Auth.user("100")))
                 .andExpect(status().isMethodNotAllowed());
-        mockMvc.perform(get(LIST_URL + "/5/transfer/accept").header(HEADER, "300"))
+        mockMvc.perform(get(LIST_URL + "/5/transfer/accept").principal(Auth.user("300")))
                 .andExpect(status().isMethodNotAllowed());
-        mockMvc.perform(get(LIST_URL + "/5/transfer/reject").header(HEADER, "300"))
+        mockMvc.perform(get(LIST_URL + "/5/transfer/reject").principal(Auth.user("300")))
                 .andExpect(status().isMethodNotAllowed());
 
         verifyNoInteractions(service);

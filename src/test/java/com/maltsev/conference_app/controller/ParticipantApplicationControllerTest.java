@@ -34,8 +34,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  */
 @ExtendWith(MockitoExtension.class)
 class ParticipantApplicationControllerTest {
-    private static final String HEADER = "X-User-Id";
-
     @Mock
     private ParticipantApplicationService service;
 
@@ -93,7 +91,7 @@ class ParticipantApplicationControllerTest {
     void list_returnsOwnApplications() throws Exception {
         when(service.list(1L)).thenReturn(java.util.List.of(response(ApplicationStatus.SUBMITTED)));
 
-        mockMvc.perform(get("/applications").header(HEADER, "1"))
+        mockMvc.perform(get("/applications").principal(Auth.user("1")))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.length()").value(1))
                 .andExpect(jsonPath("$[0].id").value(100))
@@ -101,10 +99,10 @@ class ParticipantApplicationControllerTest {
     }
 
     @Test
-    void list_withoutHeader_returns400() throws Exception {
+    void list_withoutAuthentication_returns401() throws Exception {
         mockMvc.perform(get("/applications"))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.error").value("Header X-User-Id is required"));
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.error").value("Authentication required"));
 
         verifyNoInteractions(service);
     }
@@ -118,7 +116,7 @@ class ParticipantApplicationControllerTest {
         when(service.create(eq(1L), any(CreateApplicationRequest.class))).thenReturn(response(ApplicationStatus.SUBMITTED));
 
         mockMvc.perform(post("/applications")
-                        .header(HEADER, "1")
+                        .principal(Auth.user("1"))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(validCreateJson()))
                 .andExpect(status().isCreated())
@@ -135,11 +133,11 @@ class ParticipantApplicationControllerTest {
     }
 
     @Test
-    void create_success_passesHeaderAndBodyToService() throws Exception {
+    void create_success_passesUserIdAndBodyToService() throws Exception {
         when(service.create(eq(1L), any(CreateApplicationRequest.class))).thenReturn(response(ApplicationStatus.SUBMITTED));
 
         mockMvc.perform(post("/applications")
-                        .header(HEADER, "1")
+                        .principal(Auth.user("1"))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(validCreateJson()))
                 .andExpect(status().isCreated());
@@ -157,7 +155,7 @@ class ParticipantApplicationControllerTest {
         when(service.create(eq(1L), any(CreateApplicationRequest.class))).thenReturn(response(ApplicationStatus.SUBMITTED));
 
         mockMvc.perform(post("/applications")
-                        .header(HEADER, "1")
+                        .principal(Auth.user("1"))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(createJson("10", "a".repeat(300), "Abstract", "Content")))
                 .andExpect(status().isCreated());
@@ -166,7 +164,7 @@ class ParticipantApplicationControllerTest {
     @Test
     void create_emptyTitle_returns400WithFieldMessage() throws Exception {
         mockMvc.perform(post("/applications")
-                        .header(HEADER, "1")
+                        .principal(Auth.user("1"))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(createJson("10", "", "Abstract", "Content")))
                 .andExpect(status().isBadRequest())
@@ -179,7 +177,7 @@ class ParticipantApplicationControllerTest {
     @Test
     void create_titleOf301Characters_returns400() throws Exception {
         mockMvc.perform(post("/applications")
-                        .header(HEADER, "1")
+                        .principal(Auth.user("1"))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(createJson("10", "a".repeat(301), "Abstract", "Content")))
                 .andExpect(status().isBadRequest())
@@ -192,7 +190,7 @@ class ParticipantApplicationControllerTest {
     @Test
     void create_emptyAbstractText_returns400WithFieldMessage() throws Exception {
         mockMvc.perform(post("/applications")
-                        .header(HEADER, "1")
+                        .principal(Auth.user("1"))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(createJson("10", "Title", "", "Content")))
                 .andExpect(status().isBadRequest())
@@ -204,7 +202,7 @@ class ParticipantApplicationControllerTest {
     @Test
     void create_emptyContent_returns400WithFieldMessage() throws Exception {
         mockMvc.perform(post("/applications")
-                        .header(HEADER, "1")
+                        .principal(Auth.user("1"))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(createJson("10", "Title", "Abstract", "")))
                 .andExpect(status().isBadRequest())
@@ -216,7 +214,7 @@ class ParticipantApplicationControllerTest {
     @Test
     void create_directionIdNull_returns400WithFieldMessage() throws Exception {
         mockMvc.perform(post("/applications")
-                        .header(HEADER, "1")
+                        .principal(Auth.user("1"))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(createJson("null", "Title", "Abstract", "Content")))
                 .andExpect(status().isBadRequest())
@@ -228,7 +226,7 @@ class ParticipantApplicationControllerTest {
     @Test
     void create_emptyJsonObject_returns400WithAllFourFields() throws Exception {
         mockMvc.perform(post("/applications")
-                        .header(HEADER, "1")
+                        .principal(Auth.user("1"))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{}"))
                 .andExpect(status().isBadRequest())
@@ -242,24 +240,24 @@ class ParticipantApplicationControllerTest {
     }
 
     @Test
-    void create_missingHeader_returns400() throws Exception {
+    void create_missingAuthentication_returns401() throws Exception {
         mockMvc.perform(post("/applications")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(validCreateJson()))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.error").value("Header X-User-Id is required"));
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.error").value("Authentication required"));
 
         verifyNoInteractions(service);
     }
 
     @Test
-    void create_headerIsNotANumber_returns400() throws Exception {
+    void create_tokenSubjectIsNotANumber_returns401() throws Exception {
         mockMvc.perform(post("/applications")
-                        .header(HEADER, "abc")
+                        .principal(Auth.user("abc"))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(validCreateJson()))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.error").value("Invalid value for 'X-User-Id'"));
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.error").value("Invalid token"));
 
         verifyNoInteractions(service);
     }
@@ -267,7 +265,7 @@ class ParticipantApplicationControllerTest {
     @Test
     void create_malformedJson_returns400() throws Exception {
         mockMvc.perform(post("/applications")
-                        .header(HEADER, "1")
+                        .principal(Auth.user("1"))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{ \"directionId\": 10, \"title\": "))
                 .andExpect(status().isBadRequest())
@@ -279,7 +277,7 @@ class ParticipantApplicationControllerTest {
     @Test
     void create_directionIdIsNotANumber_returns400() throws Exception {
         mockMvc.perform(post("/applications")
-                        .header(HEADER, "1")
+                        .principal(Auth.user("1"))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(createJson("\"abc\"", "Title", "Abstract", "Content")))
                 .andExpect(status().isBadRequest())
@@ -291,7 +289,7 @@ class ParticipantApplicationControllerTest {
     @Test
     void create_noBody_returns400() throws Exception {
         mockMvc.perform(post("/applications")
-                        .header(HEADER, "1")
+                        .principal(Auth.user("1"))
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.error").value("Malformed request body"));
@@ -302,7 +300,7 @@ class ParticipantApplicationControllerTest {
     @Test
     void create_bodyIsNotJson_returns415() throws Exception {
         mockMvc.perform(post("/applications")
-                        .header(HEADER, "1")
+                        .principal(Auth.user("1"))
                         .contentType(MediaType.TEXT_PLAIN)
                         .content("just text"))
                 .andExpect(status().isUnsupportedMediaType());
@@ -316,7 +314,7 @@ class ParticipantApplicationControllerTest {
                 .thenThrow(new NotFoundException("User not found: 999"));
 
         mockMvc.perform(post("/applications")
-                        .header(HEADER, "999")
+                        .principal(Auth.user("999"))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(validCreateJson()))
                 .andExpect(status().isNotFound())
@@ -329,7 +327,7 @@ class ParticipantApplicationControllerTest {
                 .thenThrow(new NotFoundException("Direction not found: 10"));
 
         mockMvc.perform(post("/applications")
-                        .header(HEADER, "1")
+                        .principal(Auth.user("1"))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(validCreateJson()))
                 .andExpect(status().isNotFound())
@@ -342,7 +340,7 @@ class ParticipantApplicationControllerTest {
                 .thenThrow(new ConflictException("T1 has passed"));
 
         mockMvc.perform(post("/applications")
-                        .header(HEADER, "1")
+                        .principal(Auth.user("1"))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(validCreateJson()))
                 .andExpect(status().isConflict())
@@ -351,7 +349,7 @@ class ParticipantApplicationControllerTest {
 
     @Test
     void applications_deleteMethodIsNotAllowed_returns405() throws Exception {
-        mockMvc.perform(delete("/applications").header(HEADER, "1"))
+        mockMvc.perform(delete("/applications").principal(Auth.user("1")))
                 .andExpect(status().isMethodNotAllowed());
 
         verifyNoInteractions(service);
@@ -367,7 +365,7 @@ class ParticipantApplicationControllerTest {
                 .thenReturn(response(ApplicationStatus.SUBMITTED));
 
         mockMvc.perform(put("/applications/100")
-                        .header(HEADER, "1")
+                        .principal(Auth.user("1"))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(validUpdateJson()))
                 .andExpect(status().isOk())
@@ -386,7 +384,7 @@ class ParticipantApplicationControllerTest {
                 .thenReturn(response(ApplicationStatus.SUBMITTED));
 
         mockMvc.perform(put("/applications/100")
-                        .header(HEADER, "1")
+                        .principal(Auth.user("1"))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(validUpdateJson()))
                 .andExpect(status().isOk());
@@ -401,7 +399,7 @@ class ParticipantApplicationControllerTest {
     @Test
     void update_emptyTitle_returns400WithFieldMessage() throws Exception {
         mockMvc.perform(put("/applications/100")
-                        .header(HEADER, "1")
+                        .principal(Auth.user("1"))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(updateJson("", "Abstract", "Content")))
                 .andExpect(status().isBadRequest())
@@ -414,7 +412,7 @@ class ParticipantApplicationControllerTest {
     @Test
     void update_titleOf301Characters_returns400() throws Exception {
         mockMvc.perform(put("/applications/100")
-                        .header(HEADER, "1")
+                        .principal(Auth.user("1"))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(updateJson("a".repeat(301), "Abstract", "Content")))
                 .andExpect(status().isBadRequest())
@@ -426,7 +424,7 @@ class ParticipantApplicationControllerTest {
     @Test
     void update_emptyJsonObject_returns400WithAllThreeFields() throws Exception {
         mockMvc.perform(put("/applications/100")
-                        .header(HEADER, "1")
+                        .principal(Auth.user("1"))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{}"))
                 .andExpect(status().isBadRequest())
@@ -439,24 +437,24 @@ class ParticipantApplicationControllerTest {
     }
 
     @Test
-    void update_missingHeader_returns400() throws Exception {
+    void update_missingAuthentication_returns401() throws Exception {
         mockMvc.perform(put("/applications/100")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(validUpdateJson()))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.error").value("Header X-User-Id is required"));
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.error").value("Authentication required"));
 
         verifyNoInteractions(service);
     }
 
     @Test
-    void update_headerIsNotANumber_returns400() throws Exception {
+    void update_tokenSubjectIsNotANumber_returns401() throws Exception {
         mockMvc.perform(put("/applications/100")
-                        .header(HEADER, "abc")
+                        .principal(Auth.user("abc"))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(validUpdateJson()))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.error").value("Invalid value for 'X-User-Id'"));
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.error").value("Invalid token"));
 
         verifyNoInteractions(service);
     }
@@ -464,7 +462,7 @@ class ParticipantApplicationControllerTest {
     @Test
     void update_idInUrlIsNotANumber_returns400() throws Exception {
         mockMvc.perform(put("/applications/abc")
-                        .header(HEADER, "1")
+                        .principal(Auth.user("1"))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(validUpdateJson()))
                 .andExpect(status().isBadRequest())
@@ -476,7 +474,7 @@ class ParticipantApplicationControllerTest {
     @Test
     void update_malformedJson_returns400() throws Exception {
         mockMvc.perform(put("/applications/100")
-                        .header(HEADER, "1")
+                        .principal(Auth.user("1"))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{ \"title\": "))
                 .andExpect(status().isBadRequest())
@@ -488,7 +486,7 @@ class ParticipantApplicationControllerTest {
     @Test
     void update_noBody_returns400() throws Exception {
         mockMvc.perform(put("/applications/100")
-                        .header(HEADER, "1")
+                        .principal(Auth.user("1"))
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.error").value("Malformed request body"));
@@ -502,7 +500,7 @@ class ParticipantApplicationControllerTest {
                 .thenThrow(new NotFoundException("Application not found: 999"));
 
         mockMvc.perform(put("/applications/999")
-                        .header(HEADER, "1")
+                        .principal(Auth.user("1"))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(validUpdateJson()))
                 .andExpect(status().isNotFound())
@@ -515,7 +513,7 @@ class ParticipantApplicationControllerTest {
                 .thenThrow(new ForbiddenException("Application belongs to another participant"));
 
         mockMvc.perform(put("/applications/100")
-                        .header(HEADER, "2")
+                        .principal(Auth.user("2"))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(validUpdateJson()))
                 .andExpect(status().isForbidden())
@@ -528,7 +526,7 @@ class ParticipantApplicationControllerTest {
                 .thenThrow(new ConflictException("Application is already withdrawn"));
 
         mockMvc.perform(put("/applications/100")
-                        .header(HEADER, "1")
+                        .principal(Auth.user("1"))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(validUpdateJson()))
                 .andExpect(status().isConflict())
@@ -541,7 +539,7 @@ class ParticipantApplicationControllerTest {
                 .thenThrow(new ConflictException("T1 has passed"));
 
         mockMvc.perform(put("/applications/100")
-                        .header(HEADER, "1")
+                        .principal(Auth.user("1"))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(validUpdateJson()))
                 .andExpect(status().isConflict())
@@ -550,7 +548,7 @@ class ParticipantApplicationControllerTest {
 
     @Test
     void update_deleteMethodIsNotAllowed_returns405() throws Exception {
-        mockMvc.perform(delete("/applications/100").header(HEADER, "1"))
+        mockMvc.perform(delete("/applications/100").principal(Auth.user("1")))
                 .andExpect(status().isMethodNotAllowed());
 
         verifyNoInteractions(service);
@@ -564,7 +562,7 @@ class ParticipantApplicationControllerTest {
     void withdraw_success_returns200WithStatusWithdrawn() throws Exception {
         when(service.withdraw(100L, 1L)).thenReturn(response(ApplicationStatus.WITHDRAWN));
 
-        mockMvc.perform(post("/applications/100/withdraw").header(HEADER, "1"))
+        mockMvc.perform(post("/applications/100/withdraw").principal(Auth.user("1")))
                 .andExpect(status().isOk())
                 .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
                 .andExpect(jsonPath("$.id").value(100))
@@ -576,33 +574,33 @@ class ParticipantApplicationControllerTest {
     void withdraw_success_passesIdAndHeaderToService() throws Exception {
         when(service.withdraw(100L, 1L)).thenReturn(response(ApplicationStatus.WITHDRAWN));
 
-        mockMvc.perform(post("/applications/100/withdraw").header(HEADER, "1"))
+        mockMvc.perform(post("/applications/100/withdraw").principal(Auth.user("1")))
                 .andExpect(status().isOk());
 
         verify(service).withdraw(100L, 1L);
     }
 
     @Test
-    void withdraw_missingHeader_returns400() throws Exception {
+    void withdraw_missingAuthentication_returns401() throws Exception {
         mockMvc.perform(post("/applications/100/withdraw"))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.error").value("Header X-User-Id is required"));
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.error").value("Authentication required"));
 
         verifyNoInteractions(service);
     }
 
     @Test
-    void withdraw_headerIsNotANumber_returns400() throws Exception {
-        mockMvc.perform(post("/applications/100/withdraw").header(HEADER, "abc"))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.error").value("Invalid value for 'X-User-Id'"));
+    void withdraw_tokenSubjectIsNotANumber_returns401() throws Exception {
+        mockMvc.perform(post("/applications/100/withdraw").principal(Auth.user("abc")))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.error").value("Invalid token"));
 
         verifyNoInteractions(service);
     }
 
     @Test
     void withdraw_idInUrlIsNotANumber_returns400() throws Exception {
-        mockMvc.perform(post("/applications/abc/withdraw").header(HEADER, "1"))
+        mockMvc.perform(post("/applications/abc/withdraw").principal(Auth.user("1")))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.error").value("Invalid value for 'id'"));
 
@@ -613,7 +611,7 @@ class ParticipantApplicationControllerTest {
     void withdraw_applicationNotFound_returns404() throws Exception {
         when(service.withdraw(999L, 1L)).thenThrow(new NotFoundException("Application not found: 999"));
 
-        mockMvc.perform(post("/applications/999/withdraw").header(HEADER, "1"))
+        mockMvc.perform(post("/applications/999/withdraw").principal(Auth.user("1")))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.error").value("Application not found: 999"));
     }
@@ -622,7 +620,7 @@ class ParticipantApplicationControllerTest {
     void withdraw_foreignParticipant_returns403() throws Exception {
         when(service.withdraw(100L, 2L)).thenThrow(new ForbiddenException("Application belongs to another participant"));
 
-        mockMvc.perform(post("/applications/100/withdraw").header(HEADER, "2"))
+        mockMvc.perform(post("/applications/100/withdraw").principal(Auth.user("2")))
                 .andExpect(status().isForbidden())
                 .andExpect(jsonPath("$.error").value("Application belongs to another participant"));
     }
@@ -631,7 +629,7 @@ class ParticipantApplicationControllerTest {
     void withdraw_alreadyWithdrawn_returns409() throws Exception {
         when(service.withdraw(100L, 1L)).thenThrow(new ConflictException("Application is already withdrawn"));
 
-        mockMvc.perform(post("/applications/100/withdraw").header(HEADER, "1"))
+        mockMvc.perform(post("/applications/100/withdraw").principal(Auth.user("1")))
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.error").value("Application is already withdrawn"));
     }
@@ -640,14 +638,14 @@ class ParticipantApplicationControllerTest {
     void withdraw_deadlinePassed_returns409() throws Exception {
         when(service.withdraw(100L, 1L)).thenThrow(new ConflictException("T1 has passed"));
 
-        mockMvc.perform(post("/applications/100/withdraw").header(HEADER, "1"))
+        mockMvc.perform(post("/applications/100/withdraw").principal(Auth.user("1")))
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.error").value("T1 has passed"));
     }
 
     @Test
     void withdraw_getMethodIsNotAllowed_returns405() throws Exception {
-        mockMvc.perform(get("/applications/100/withdraw").header(HEADER, "1"))
+        mockMvc.perform(get("/applications/100/withdraw").principal(Auth.user("1")))
                 .andExpect(status().isMethodNotAllowed());
 
         verifyNoInteractions(service);
@@ -659,7 +657,7 @@ class ParticipantApplicationControllerTest {
 
     @Test
     void unknownUrl_returns404() throws Exception {
-        mockMvc.perform(get("/unknown").header(HEADER, "1"))
+        mockMvc.perform(get("/unknown").principal(Auth.user("1")))
                 .andExpect(status().isNotFound());
 
         verifyNoInteractions(service);

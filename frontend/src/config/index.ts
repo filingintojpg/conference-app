@@ -3,11 +3,8 @@ import type { ApplicationStatus, ReviewStatus, Role } from '../types';
 // Адрес бэкенда. Меняется через frontend/.env (VITE_API_URL).
 export const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080';
 
-// Заголовок, по которому бэкенд определяет, от чьего лица выполняется действие.
-export const USER_HEADER = 'X-User-Id';
-
 export const STORAGE_KEYS = {
-  currentUserId: 'conference.currentUserId',
+  accessToken: 'conference.accessToken',
 } as const;
 
 // Коды ролей и статусов - часть контракта с бэкендом.

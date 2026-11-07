@@ -33,15 +33,34 @@ docker compose down -v
 
 ## API endpoints
 
+### Auth
+
+#### POST `/auth/register` - Register a participant and sign in.
+
+```json
+{
+  "lastName": "Ivanov",
+  "firstName": "Ivan",
+  "middleName": "Ivanovich",
+  "email": "new.user@example.com",
+  "password": "at-least-8-chars"
+}
+```
+
+#### POST `/auth/login` - Sign in.
+
+```json
+{
+  "email": "ivan@example.com",
+  "password": "password123"
+}
+```
+
+#### GET `/auth/me` - Current user by token.
+
 ### Common
 
 #### GET `/directions` - List of directions.
-
-#### GET `/users` - List of users (optional role filter).
-
-```text
-GET /users?role=ORGANIZER
-```
 
 #### GET `/application-statuses` - List of possible application statuses.
 

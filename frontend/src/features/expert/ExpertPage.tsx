@@ -1,7 +1,7 @@
 import { directionsApi, expertApplicationsApi } from '../../api';
 import ApplicationList from '../../components/ApplicationList/ApplicationList';
 import Notice from '../../components/Notice/Notice';
-import { useRequiredUser } from '../../context/CurrentUserContext';
+import { useRequiredUser } from '../../context/AuthContext';
 import { useAsync } from '../../hooks/useAsync';
 import './ExpertPage.css';
 
@@ -13,7 +13,7 @@ export default function ExpertPage() {
   const direction = directions.data?.find((d) => d.expertId === currentUser.id);
 
   const applications = useAsync(
-    () => expertApplicationsApi.list(currentUser.id),
+    () => expertApplicationsApi.list(),
     [currentUser.id],
   );
 

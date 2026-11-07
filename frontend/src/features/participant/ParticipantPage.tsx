@@ -3,7 +3,7 @@ import { directionsApi, participantApplicationsApi } from '../../api';
 import ApplicationList from '../../components/ApplicationList/ApplicationList';
 import Notice from '../../components/Notice/Notice';
 import { APPLICATION_STATUS, REVIEW_STATUS } from '../../config';
-import { useRequiredUser } from '../../context/CurrentUserContext';
+import { useRequiredUser } from '../../context/AuthContext';
 import { useAsync } from '../../hooks/useAsync';
 import type { Application, Direction, FlashMessage } from '../../types';
 import { errorMessage, isPast } from '../../utils/format';
@@ -15,7 +15,7 @@ export default function ParticipantPage() {
   const currentUser = useRequiredUser();
   const directions = useAsync(() => directionsApi.list(), []);
   const applications = useAsync(
-    () => participantApplicationsApi.list(currentUser.id),
+    () => participantApplicationsApi.list(),
     [currentUser.id],
   );
 
@@ -47,14 +47,14 @@ export default function ParticipantPage() {
 
   async function handleSubmit(values: ApplicationFormValues) {
     if (editing) {
-      await participantApplicationsApi.update(currentUser.id, editing.id, {
+      await participantApplicationsApi.update(editing.id, {
         title: values.title,
         abstractText: values.abstractText,
         content: values.content,
       });
       setMessage({ type: 'success', text: 'Заявка обновлена' });
     } else {
-      await participantApplicationsApi.create(currentUser.id, {
+      await participantApplicationsApi.create({
         directionId: Number(values.directionId),
         title: values.title,
         abstractText: values.abstractText,
@@ -69,7 +69,7 @@ export default function ParticipantPage() {
   async function handleWithdraw(application: Application) {
     if (!window.confirm(`Отозвать заявку «${application.title}»?`)) return;
     try {
-      await participantApplicationsApi.withdraw(currentUser.id, application.id);
+      await participantApplicationsApi.withdraw(application.id);
       setMessage({ type: 'success', text: 'Заявка отозвана' });
       if (editing?.id === application.id) resetForm();
     } catch (err) {

@@ -28,19 +28,19 @@ public final class TestData {
     }
 
     public static User participant(Long id) {
-        User participant = new User("Ivanov", "Ivan", "Ivanovich", "ivan", "example.com", Role.PARTICIPANT);
+        User participant = new User("Ivanov", "Ivan", "Ivanovich", "ivan", "example.com", Role.PARTICIPANT, "hash");
         ReflectionTestUtils.setField(participant, "id", id);
         return participant;
     }
 
     public static User organizer(Long id) {
-        User organizer = new User("Sidorova", "Maria", "Alexandrovna", "maria", "example.com", Role.ORGANIZER);
+        User organizer = new User("Sidorova", "Maria", "Alexandrovna", "maria", "example.com", Role.ORGANIZER, "hash");
         ReflectionTestUtils.setField(organizer, "id", id);
         return organizer;
     }
 
     public static User expert(Long id) {
-        User expert = new User("Kuznetsov", "Alexey", "Viktorovich", "alexey", "example.com", Role.EXPERT);
+        User expert = new User("Kuznetsov", "Alexey", "Viktorovich", "alexey", "example.com", Role.EXPERT, "hash");
         ReflectionTestUtils.setField(expert, "id", id);
         return expert;
     }

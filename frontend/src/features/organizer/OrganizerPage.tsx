@@ -16,7 +16,7 @@ import {
   STATUS_LABELS,
   labelOf,
 } from '../../config';
-import { useRequiredUser } from '../../context/CurrentUserContext';
+import { useRequiredUser } from '../../context/AuthContext';
 import { useAsync } from '../../hooks/useAsync';
 import type { Application, FlashMessage } from '../../types';
 import { errorMessage } from '../../utils/format';
@@ -55,12 +55,7 @@ export default function OrganizerPage() {
 
   const applications = useAsync(
     () =>
-      organizerApplicationsApi.list(
-        currentUser.id,
-        Number(selectedDirectionId),
-        status,
-        reviewStatus,
-      ),
+      organizerApplicationsApi.list(Number(selectedDirectionId), status, reviewStatus),
     [currentUser.id, selectedDirectionId, status, reviewStatus],
     { enabled: Boolean(selectedDirectionId) },
   );
@@ -89,13 +84,13 @@ export default function OrganizerPage() {
     action: 'approve' | 'reject',
     successText: string,
   ) =>
-    run(application, () => organizerApplicationsApi[action](currentUser.id, application.id), successText);
+    run(application, () => organizerApplicationsApi[action](application.id), successText);
 
   const transfer = (application: Application, targetDirectionId: string) => {
     const target = (directions.data ?? []).find((d) => String(d.id) === String(targetDirectionId));
     return run(
       application,
-      () => organizerApplicationsApi.transfer(currentUser.id, application.id, Number(targetDirectionId)),
+      () => organizerApplicationsApi.transfer(application.id, Number(targetDirectionId)),
       `Заявка передана на направление «${target?.name ?? targetDirectionId}», ожидает решения организатора`,
     );
   };
@@ -175,7 +170,7 @@ export default function OrganizerPage() {
                       onClick={() =>
                         run(
                           application,
-                          () => organizerApplicationsApi.acceptTransfer(currentUser.id, application.id),
+                          () => organizerApplicationsApi.acceptTransfer(application.id),
                           'Заявка принята на данное направление',
                         )
                       }
@@ -190,7 +185,7 @@ export default function OrganizerPage() {
                     onClick={() =>
                       run(
                         application,
-                        () => organizerApplicationsApi.rejectTransfer(currentUser.id, application.id),
+                        () => organizerApplicationsApi.rejectTransfer(application.id),
                         'Передача заявки отвергнута, заявка осталась на прежнем направлении',
                       )
                     }

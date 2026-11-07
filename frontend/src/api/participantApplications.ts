@@ -2,11 +2,11 @@ import type { Application, CreateApplicationPayload, UpdateApplicationPayload } 
 import { request } from './client';
 
 export const participantApplicationsApi = {
-  list: (userId: number) => request<Application[]>('/applications', { userId }),
-  create: (userId: number, data: CreateApplicationPayload) =>
-    request<Application>('/applications', { method: 'POST', userId, body: data }),
-  update: (userId: number, id: number, data: UpdateApplicationPayload) =>
-    request<Application>(`/applications/${id}`, { method: 'PUT', userId, body: data }),
-  withdraw: (userId: number, id: number) =>
-    request<Application>(`/applications/${id}/withdraw`, { method: 'POST', userId }),
+  list: () => request<Application[]>('/applications'),
+  create: (data: CreateApplicationPayload) =>
+    request<Application>('/applications', { method: 'POST', body: data }),
+  update: (id: number, data: UpdateApplicationPayload) =>
+    request<Application>(`/applications/${id}`, { method: 'PUT', body: data }),
+  withdraw: (id: number) =>
+    request<Application>(`/applications/${id}/withdraw`, { method: 'POST' }),
 };

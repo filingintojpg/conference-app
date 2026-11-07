@@ -11,6 +11,8 @@ interface FieldProps {
   required?: boolean;
   disabled?: boolean;
   error?: string;
+  type?: 'text' | 'email' | 'password';
+  autoComplete?: string;
 }
 
 /** Текстовое поле. multiline - многострочное (textarea). onChange получает строку. */
@@ -24,6 +26,8 @@ export default function Field({
   required = false,
   disabled = false,
   error,
+  type = 'text',
+  autoComplete,
 }: FieldProps) {
   const props = {
     className: 'field__control',
@@ -38,7 +42,7 @@ export default function Field({
   return (
     <label className="field">
       {label && <span className="field__label">{label}</span>}
-      {multiline ? <textarea rows={rows} {...props} /> : <input type="text" {...props} />}
+      {multiline ? <textarea rows={rows} {...props} /> : <input type={type} autoComplete={autoComplete} {...props} />}
       {error && <span className="field__error">{error}</span>}
     </label>
   );

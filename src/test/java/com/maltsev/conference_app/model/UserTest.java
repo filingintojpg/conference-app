@@ -8,7 +8,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 class UserTest {
 
     private static User user(String middleName, Role role) {
-        return new User("Ivanov", "Ivan", middleName, "ivan", "example.com", role);
+        return new User("Ivanov", "Ivan", middleName, "ivan", "example.com", role, "hash");
     }
 
     @Test
