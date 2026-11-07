@@ -41,7 +41,7 @@ export function useAsync<T>(
     return () => {
       cancelled = true;
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+
   }, [...deps, enabled, version]);
 
   const reload = useCallback(() => setVersion((v) => v + 1), []);

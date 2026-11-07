@@ -1,4 +1,4 @@
-// Типы данных, приходящих с бэкенда (см. dto/*.java).
+
 
 export type Role = 'PARTICIPANT' | 'ORGANIZER' | 'EXPERT';
 export type ApplicationStatus = 'SUBMITTED' | 'EDITED' | 'WITHDRAWN';
@@ -20,7 +20,6 @@ export interface Direction {
   expertId: number | null;
 }
 
-/** Заявка в виде, который видит член экспертной комиссии (без данных об авторе). */
 export interface ExpertApplication {
   id: number;
   directionId: number;
@@ -44,7 +43,6 @@ export interface Application extends ExpertApplication {
   transferToDirectionName: string | null;
 }
 
-/** То, что умеет показать карточка: заявка эксперта или полная заявка. */
 export type CardApplication = ExpertApplication & Partial<Application>;
 
 export interface CreateApplicationPayload {

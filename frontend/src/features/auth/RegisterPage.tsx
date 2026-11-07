@@ -9,7 +9,6 @@ import './AuthPage.css';
 
 const MIN_PASSWORD_LENGTH = 8;
 
-/** Регистрация участника. Организаторов и экспертов добавляет администратор базы. */
 export default function RegisterPage() {
   const { register } = useAuth();
   const [lastName, setLastName] = useState('');

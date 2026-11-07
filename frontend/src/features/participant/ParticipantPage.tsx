@@ -10,7 +10,6 @@ import { errorMessage, isPast } from '../../utils/format';
 import ApplicationForm, { type ApplicationFormValues } from './ApplicationForm';
 import './ParticipantPage.css';
 
-/** Экран участника: подать заявку, посмотреть свои, изменить или отозвать. */
 export default function ParticipantPage() {
   const currentUser = useRequiredUser();
   const directions = useAsync(() => directionsApi.list(), []);
@@ -36,7 +35,6 @@ export default function ParticipantPage() {
     application.status !== APPLICATION_STATUS.WITHDRAWN &&
     !isPast(directionsById[application.directionId]?.deadline);
 
-  // После проверки организатором заявку можно только отозвать.
   const canEdit = (application: Application) =>
     canWithdraw(application) && application.reviewStatus === REVIEW_STATUS.PENDING;
 

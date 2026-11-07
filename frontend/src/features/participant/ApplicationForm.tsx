@@ -21,11 +21,6 @@ interface ApplicationFormProps {
   onCancel: () => void;
 }
 
-/**
- * Форма подачи / редактирования заявки.
- * initial - заявка для редактирования (null - создание новой).
- * onSubmit(values) должен вернуть Promise; при ошибке форма покажет сообщение бэкенда.
- */
 export default function ApplicationForm({
   directions,
   initial,

@@ -22,10 +22,6 @@ import type { Application, FlashMessage } from '../../types';
 import { errorMessage } from '../../utils/format';
 import './OrganizerPage.css';
 
-/**
- * Экран организатора: заявки своих направлений, фильтры, проверка заявок
- * и передача заявок между направлениями.
- */
 export default function OrganizerPage() {
   const currentUser = useRequiredUser();
   const directions = useAsync(() => directionsApi.list(), []);
@@ -33,19 +29,17 @@ export default function OrganizerPage() {
   const reviewStatuses = useAsync(() => reviewStatusesApi.list(), []);
 
   const [directionId, setDirectionId] = useState('');
-  // Пустая строка - "любой".
+
   const [status, setStatus] = useState('');
   const [reviewStatus, setReviewStatus] = useState<string>(REVIEW_STATUS.PENDING);
   const [message, setMessage] = useState<FlashMessage | null>(null);
   const [reviewingId, setReviewingId] = useState<number | null>(null);
 
-  // Организатор видит только свои направления.
   const myDirections = useMemo(
     () => (directions.data ?? []).filter((d) => d.organizerId === currentUser.id),
     [directions.data, currentUser.id],
   );
 
-  // Пока пользователь ничего не выбрал - берём первое направление из списка.
   const selectedDirectionId =
     directionId && myDirections.some((d) => String(d.id) === directionId)
       ? directionId
@@ -60,7 +54,6 @@ export default function OrganizerPage() {
     { enabled: Boolean(selectedDirectionId) },
   );
 
-  // Выполняет действие над заявкой, показывает результат и перезагружает список.
   async function run(
     application: Application,
     call: () => Promise<unknown>,
@@ -97,15 +90,12 @@ export default function OrganizerPage() {
 
   const hasPendingTransfer = (application: Application) => Boolean(application.transferToDirectionId);
 
-  // Заявка передана на выбранное направление и ждёт ответа его организатора.
   const isIncomingTransfer = (application: Application) =>
     hasPendingTransfer(application) &&
     String(application.transferToDirectionId) === selectedDirectionId;
 
   const isWithdrawn = (application: Application) => application.status === APPLICATION_STATUS.WITHDRAWN;
 
-  // Проверить или передать можно только неотозванную заявку без результата проверки
-  // и без ожидающей передачи.
   const canReview = (application: Application) =>
     !isWithdrawn(application) &&
     application.reviewStatus === REVIEW_STATUS.PENDING &&

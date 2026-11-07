@@ -20,7 +20,6 @@ vi.mock('./context/AuthContext', () => ({
   }),
 }));
 
-// Настоящие экраны ролей здесь не нужны: проверяем только, какой из них выбирает App.
 vi.mock('./features/roleViews', () => ({
   roleViews: {
     PARTICIPANT: () => 'Экран участника',

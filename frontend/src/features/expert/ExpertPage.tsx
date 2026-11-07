@@ -5,7 +5,6 @@ import { useRequiredUser } from '../../context/AuthContext';
 import { useAsync } from '../../hooks/useAsync';
 import './ExpertPage.css';
 
-/** Экран члена экспертной комиссии: подтверждённые заявки своего направления без данных об авторах. */
 export default function ExpertPage() {
   const currentUser = useRequiredUser();
 

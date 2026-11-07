@@ -1,14 +1,10 @@
 import type { ApplicationStatus, ReviewStatus, Role } from '../types';
 
-// Адрес бэкенда. Меняется через frontend/.env (VITE_API_URL).
 export const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080';
 
-// Имена CSRF-cookie и заголовка совпадают с настройками Spring Security (CookieCsrfTokenRepository).
 export const CSRF_COOKIE = 'XSRF-TOKEN';
 export const CSRF_HEADER = 'X-XSRF-TOKEN';
 
-// Коды ролей и статусов - часть контракта с бэкендом.
-// Сами списки (пользователи, направления, статусы) приходят с бэкенда.
 export const ROLES = {
   PARTICIPANT: 'PARTICIPANT',
   ORGANIZER: 'ORGANIZER',
@@ -27,7 +23,6 @@ export const REVIEW_STATUS = {
   REJECTED: 'REJECTED',
 } as const satisfies Record<ReviewStatus, ReviewStatus>;
 
-// Подписи для отображения. Для неизвестного кода показываем сам код.
 export const ROLE_LABELS: Record<Role, string> = {
   PARTICIPANT: 'участник',
   ORGANIZER: 'организатор',
@@ -40,7 +35,6 @@ export const STATUS_LABELS: Record<ApplicationStatus, string> = {
   WITHDRAWN: 'Отозвана',
 };
 
-// Результат проверки заявки организатором.
 export const REVIEW_STATUS_LABELS: Record<ReviewStatus, string> = {
   PENDING: 'Ожидает проверки',
   APPROVED: 'Прошла проверку',

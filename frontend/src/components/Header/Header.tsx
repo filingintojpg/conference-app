@@ -2,7 +2,6 @@ import { ROLE_LABELS, labelOf } from '../../config';
 import { useAuth } from '../../context/AuthContext';
 import './Header.css';
 
-/** Шапка: название приложения и, после входа, имя пользователя с кнопкой выхода. */
 export default function Header() {
   const { user, logout } = useAuth();
 

@@ -7,7 +7,6 @@ import { useAuth } from '../../context/AuthContext';
 import { errorMessage } from '../../utils/format';
 import './AuthPage.css';
 
-/** Вход по email и паролю. После успешного входа App сам перенаправит на главную. */
 export default function LoginPage() {
   const { login } = useAuth();
   const [email, setEmail] = useState('');

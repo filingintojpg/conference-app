@@ -10,9 +10,8 @@ interface ApplicationCardProps {
   actions?: ReactNode;
 }
 
-/** Карточка заявки. actions - произвольные кнопки (зависят от роли). */
 export default function ApplicationCard({ application, showParticipant = false, actions }: ApplicationCardProps) {
-  // У отозванной заявки, которую так и не проверили, статус проверки не показываем.
+
   const reviewStatus = application.reviewStatus;
   const showReview =
     !!reviewStatus &&

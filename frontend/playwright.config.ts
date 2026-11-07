@@ -1,7 +1,5 @@
 import { defineConfig, devices } from '@playwright/test';
 
-// E2E-тесты открывают настоящее приложение в браузере. Запросы к бэкенду подменяются (e2e/helpers/mockApi.ts),
-// поэтому для запуска нужен только фронтенд: Playwright сам поднимает `npm run dev`.
 export default defineConfig({
   testDir: './e2e',
   fullyParallel: true,

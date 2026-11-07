@@ -17,10 +17,6 @@ interface SelectProps {
   error?: string;
 }
 
-/**
- * Выпадающий список.
- * options: [{ value, label, disabled? }]; onChange получает выбранное значение (строку).
- */
 export default function Select({
   label,
   value,

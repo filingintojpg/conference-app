@@ -14,12 +14,10 @@ import {
   selectField,
 } from './helpers/mockApi';
 
-// Сценарии, в которых заявка проходит через руки нескольких ролей.
 test.describe('путь заявки через все роли', () => {
   test('участник подаёт заявку, организатор подтверждает, эксперт её видит', async ({ page }) => {
     await mockApi(page, { user: null, applications: [] });
 
-    // 1. Участник подаёт заявку.
     await loginAs(page, IVAN);
     await selectField(page, 'Направление').selectOption({ value: '1' });
     await page.getByLabel('Название', { exact: true }).fill('Доклад про нейросети');
@@ -29,24 +27,20 @@ test.describe('путь заявки через все роли', () => {
     await expect(card(page, 'Доклад про нейросети').getByText('Ожидает проверки')).toBeVisible();
     await logout(page);
 
-    // 2. Эксперт пока ничего не видит: заявка не подтверждена.
     await loginAs(page, MARIA);
     await expect(page.getByText('Подтверждённых заявок нет')).toBeVisible();
     await logout(page);
 
-    // 3. Организатор подтверждает заявку.
     await loginAs(page, ANNA);
     await card(page, 'Доклад про нейросети').getByRole('button', { name: 'Подтвердить' }).click();
     await expect(page.getByText('Заявка прошла проверку')).toBeVisible();
     await logout(page);
 
-    // 4. Эксперт видит подтверждённую заявку, но не знает автора.
     await loginAs(page, MARIA);
     await expect(card(page, 'Доклад про нейросети')).toBeVisible();
     await expect(page.getByText(IVAN.fullName)).toHaveCount(0);
     await logout(page);
 
-    // 5. Участник видит, что заявка прошла проверку.
     await loginAs(page, IVAN);
     await expect(card(page, 'Доклад про нейросети').getByText('Прошла проверку')).toBeVisible();
   });
@@ -91,7 +85,6 @@ test.describe('путь заявки через все роли', () => {
   test('передача заявки: один организатор передаёт, другой принимает, участник видит новое направление', async ({ page }) => {
     await mockApi(page, { user: null, applications: [makeApplication({ id: 1, title: 'Не в то направление' })] });
 
-    // Анна передаёт заявку на «Кибербезопасность».
     await loginAs(page, ANNA);
     await card(page, 'Не в то направление').getByRole('button', { name: 'Передать на другое направление' }).click();
     await selectField(page, 'Передать на направление').selectOption({ value: '2' });
@@ -99,20 +92,17 @@ test.describe('путь заявки через все роли', () => {
     await expect(page.getByText('Передача ожидает решения')).toBeVisible();
     await logout(page);
 
-    // Олег принимает.
     await loginAs(page, OLEG);
     await card(page, 'Не в то направление').getByRole('button', { name: 'Принять на данное направление' }).click();
     await expect(page.getByText('Заявка принята на данное направление')).toBeVisible();
     await logout(page);
 
-    // Участник видит новое направление.
     await loginAs(page, IVAN);
     const application = card(page, 'Не в то направление');
     await expect(application.getByText(`Направление: ${CYBER_DIRECTION}`)).toBeVisible();
     await expect(application.getByText('Передана с направления «Искусственный интеллект»')).toBeVisible();
     await logout(page);
 
-    // У Анны заявки больше нет.
     await loginAs(page, ANNA);
     await expect(page.getByText('Заявок с такими параметрами нет')).toBeVisible();
   });

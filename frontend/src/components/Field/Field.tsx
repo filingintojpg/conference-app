@@ -15,7 +15,6 @@ interface FieldProps {
   autoComplete?: string;
 }
 
-/** Текстовое поле. multiline - многострочное (textarea). onChange получает строку. */
 export default function Field({
   label,
   value,

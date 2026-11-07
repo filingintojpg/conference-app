@@ -8,21 +8,18 @@ import RegisterPage from './features/auth/RegisterPage';
 import { roleViews } from './features/roleViews';
 import './App.css';
 
-/** Защищённая страница: без входа отправляет на /login. */
 function RequireAuth({ children }: { children: ReactElement }) {
   const { user } = useAuth();
   if (!user) return <Navigate to="/login" replace />;
   return children;
 }
 
-/** Страницы входа и регистрации: уже вошедшего отправляет на главную. */
 function GuestOnly({ children }: { children: ReactElement }) {
   const { user } = useAuth();
   if (user) return <Navigate to="/" replace />;
   return children;
 }
 
-/** Главная страница: экран зависит от роли вошедшего пользователя. */
 function Home() {
   const { user } = useAuth();
   if (!user) return null;

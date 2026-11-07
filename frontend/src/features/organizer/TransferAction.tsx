@@ -9,11 +9,6 @@ interface TransferActionProps {
   onTransfer: (targetDirectionId: string) => Promise<void> | void;
 }
 
-/**
- * Кнопка "Передать на другое направление": по клику показывает выбор направления.
- * directions - направления, на которые можно передать заявку (текущее уже исключено).
- * onTransfer(targetDirectionId) вызывается после подтверждения.
- */
 export default function TransferAction({
   directions,
   disabled = false,

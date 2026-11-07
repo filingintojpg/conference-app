@@ -11,7 +11,6 @@ test.describe('вход в систему', () => {
     await expect(page.getByRole('heading', { name: 'Вход' })).toBeVisible();
   });
 
-  // Один и тот же сценарий для каждой роли: у каждой свой экран и своя подпись в шапке.
   for (const { user, roleLabel, heading } of ROLE_SCREENS) {
     test(`вход: ${roleLabel} попадает на свой экран`, async ({ page }) => {
       await mockApi(page);

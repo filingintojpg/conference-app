@@ -8,11 +8,11 @@ export default defineConfig({
     strictPort: true,
   },
   test: {
-    // Модульные тесты и тесты компонентов: браузер подменяет jsdom, бэкенд не нужен.
+
     environment: 'jsdom',
     setupFiles: ['./src/test/setup.ts'],
     include: ['src/**/*.test.{ts,tsx}'],
-    // e2e-тесты (Playwright) лежат в e2e/ и запускаются отдельно: npm run e2e
+
     exclude: ['e2e/**', 'node_modules/**'],
     coverage: {
       provider: 'v8',

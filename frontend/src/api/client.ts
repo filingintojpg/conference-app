@@ -14,11 +14,6 @@ export class ApiError extends Error {
   }
 }
 
-// ---- Авторизация: JWT лежит в httpOnly-cookie, JavaScript его не видит и не хранит.
-// Браузер сам прикладывает cookie к каждому запросу (credentials: 'include').
-// От CSRF защищает заголовок X-XSRF-TOKEN: его значение берётся из cookie XSRF-TOKEN,
-// которую читает только наш сайт; чужой сайт прочитать её и подставить заголовок не может.
-
 function readCookie(name: string): string | null {
   const prefix = `${encodeURIComponent(name)}=`;
   for (const part of document.cookie.split('; ')) {
@@ -29,14 +24,11 @@ function readCookie(name: string): string | null {
 
 const SAFE_METHODS = new Set(['GET', 'HEAD', 'OPTIONS']);
 
-// Вызывается, когда сервер ответил 401 на защищённый запрос (cookie истекла или недействительна).
 let unauthorizedHandler: (() => void) | null = null;
 
 export function setUnauthorizedHandler(handler: (() => void) | null): void {
   unauthorizedHandler = handler;
 }
-
-// ---- Запросы
 
 type QueryValue = string | number | null | undefined;
 
@@ -44,7 +36,7 @@ export interface RequestOptions {
   method?: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
   params?: Record<string, QueryValue>;
   body?: unknown;
-  /** false - 401 не считается «сессия истекла» (вход и регистрация). */
+
   auth?: boolean;
 }
 

@@ -10,10 +10,6 @@ interface ApplicationListProps<T extends CardApplication> {
   emptyText?: string;
 }
 
-/**
- * Список заявок.
- * renderActions(application) - необязательная функция, возвращающая кнопки для карточки.
- */
 export default function ApplicationList<T extends CardApplication>({
   applications,
   showParticipant = false,

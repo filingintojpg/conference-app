@@ -1,9 +1,5 @@
 import { expect, type Locator, type Page, type Route } from '@playwright/test';
 
-// ---------------------------------------------------------------------------
-// Пользователи (по одному на каждую роль и несколько «особых» для крайних случаев)
-// ---------------------------------------------------------------------------
-
 export type MockRole = 'PARTICIPANT' | 'ORGANIZER' | 'EXPERT';
 
 export interface MockUser {
@@ -16,11 +12,9 @@ export interface MockUser {
 export const VALID_PASSWORD = 'secret-pass';
 export const CSRF_VALUE = 'test-csrf-token';
 
-// Участники
 export const IVAN: MockUser = { id: 1, fullName: 'Иванов Иван', email: 'ivan@example.com', role: 'PARTICIPANT' };
 export const PETR: MockUser = { id: 2, fullName: 'Петров Пётр', email: 'petr@example.com', role: 'PARTICIPANT' };
 
-// Организаторы: Анна ведёт «Искусственный интеллект», Олег - «Кибербезопасность» и «Архив»
 export const ANNA: MockUser = { id: 10, fullName: 'Сидорова Анна', email: 'anna@example.com', role: 'ORGANIZER' };
 export const OLEG: MockUser = { id: 11, fullName: 'Кузнецов Олег', email: 'oleg@example.com', role: 'ORGANIZER' };
 export const ORGANIZER_WITHOUT_DIRECTIONS: MockUser = {
@@ -30,7 +24,6 @@ export const ORGANIZER_WITHOUT_DIRECTIONS: MockUser = {
   role: 'ORGANIZER',
 };
 
-// Эксперты: Мария закреплена за «Искусственным интеллектом», Дмитрий ни за каким направлением
 export const MARIA: MockUser = { id: 20, fullName: 'Смирнова Мария', email: 'maria@example.com', role: 'EXPERT' };
 export const EXPERT_WITHOUT_DIRECTION: MockUser = {
   id: 21,
@@ -41,16 +34,11 @@ export const EXPERT_WITHOUT_DIRECTION: MockUser = {
 
 const ALL_USERS: MockUser[] = [IVAN, PETR, ANNA, OLEG, ORGANIZER_WITHOUT_DIRECTIONS, MARIA, EXPERT_WITHOUT_DIRECTION];
 
-// Как называется роль в шапке и какой заголовок видит пользователь после входа
 export const ROLE_SCREENS: { user: MockUser; roleLabel: string; heading: string }[] = [
   { user: IVAN, roleLabel: 'участник', heading: 'Мои заявки' },
   { user: ANNA, roleLabel: 'организатор', heading: 'Заявки по направлению' },
   { user: MARIA, roleLabel: 'член экспертной комиссии', heading: 'Подтверждённые заявки' },
 ];
-
-// ---------------------------------------------------------------------------
-// Направления и заявки
-// ---------------------------------------------------------------------------
 
 interface MockDirection {
   id: number;
@@ -71,7 +59,7 @@ const PAST = '2020-01-01T12:00:00Z';
 const DIRECTIONS: MockDirection[] = [
   { id: 1, name: AI_DIRECTION, deadline: FUTURE, organizerId: ANNA.id, organizerFullName: ANNA.fullName, expertId: MARIA.id },
   { id: 2, name: CYBER_DIRECTION, deadline: FUTURE, organizerId: OLEG.id, organizerFullName: OLEG.fullName, expertId: null },
-  // Приём заявок уже закрыт
+
   { id: 3, name: ARCHIVE_DIRECTION, deadline: PAST, organizerId: OLEG.id, organizerFullName: OLEG.fullName, expertId: null },
 ];
 
@@ -95,7 +83,6 @@ export interface MockApplication {
 
 let nextSeedId = 1000;
 
-/** Заявка с разумными значениями по умолчанию: в тесте указываем только важное. */
 export function makeApplication(overrides: Partial<MockApplication> & { title: string }): MockApplication {
   return {
     id: nextSeedId++,
@@ -113,15 +100,14 @@ export function makeApplication(overrides: Partial<MockApplication> & { title: s
   };
 }
 
-/** Набор заявок по умолчанию - на нём построено большинство тестов. */
 export function defaultApplications(): MockApplication[] {
   return [
-    // Иван
+
     makeApplication({ id: 1, title: 'Нейросети в медицине' }),
     makeApplication({ id: 2, title: 'Генерация текстов', reviewStatus: 'APPROVED' }),
     makeApplication({ id: 3, title: 'Защита паролей', directionId: 2 }),
     makeApplication({ id: 9, title: 'Старая работа', directionId: 3 }),
-    // Пётр
+
     makeApplication({ id: 4, title: 'Распознавание речи', participantId: PETR.id }),
     makeApplication({ id: 5, title: 'Отозванная работа', participantId: PETR.id, status: 'WITHDRAWN' }),
     makeApplication({ id: 6, title: 'Анализ вредоносного кода', participantId: PETR.id, directionId: 2, reviewStatus: 'APPROVED' }),
@@ -129,10 +115,6 @@ export function defaultApplications(): MockApplication[] {
     makeApplication({ id: 8, title: 'Снятая с конференции', participantId: PETR.id, reviewStatus: 'APPROVED', status: 'WITHDRAWN' }),
   ];
 }
-
-// ---------------------------------------------------------------------------
-// «Бэкенд» в браузере
-// ---------------------------------------------------------------------------
 
 const API = 'http://localhost:8080';
 const ORIGIN = 'http://localhost:5173';
@@ -145,15 +127,15 @@ export interface RecordedRequest {
 }
 
 export interface MockApi {
-  /** Все запросы, дошедшие до «бэкенда». */
+
   requests: RecordedRequest[];
-  /** Вошедший пользователь (имитация сессии на сервере). null - сессии нет. */
+
   setSession: (user: MockUser | null) => void;
-  /** Текущие заявки на «сервере» (для проверки итогового состояния). */
+
   applications: () => MockApplication[];
-  /** Ближайший подходящий запрос получит ошибку с указанным статусом и текстом. */
+
   failNext: (method: string, path: RegExp | string, status: number, message: string) => void;
-  /** Сервер перестаёт отвечать (true) или снова работает (false). */
+
   setOffline: (offline: boolean) => void;
 }
 
@@ -189,13 +171,6 @@ class HttpError extends Error {
 
 const directionById = (id: number) => DIRECTIONS.find((d) => d.id === id);
 
-/**
- * Подменяет бэкенд (http://localhost:8080) в браузере. Это небольшой «живой» сервер:
- * помнит заявки, проверяет роли и права так же, как настоящий, поэтому тесты могут проходить
- * сценарии целиком (подал заявку -> организатор подтвердил -> эксперт увидел).
- *
- * Принимает либо пользователя (как раньше), либо объект настроек.
- */
 export async function mockApi(
   page: Page,
   userOrOptions: MockUser | null | MockApiOptions = null,
@@ -245,7 +220,6 @@ export async function mockApi(
     };
   };
 
-  // Эксперт получает заявку без данных об авторе.
   const toExpertResponse = (a: MockApplication) => ({
     id: a.id,
     directionId: a.directionId,
@@ -269,13 +243,10 @@ export async function mockApi(
     }
   };
 
-  /** Обрабатывает запрос и возвращает [статус, тело]. Ошибки бросает как HttpError. */
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   function handle(method: string, url: URL, body: any): [number, unknown?] {
     const path = url.pathname;
     let match: RegExpMatchArray | null;
 
-    // ---- Вход, регистрация, выход
     if (path === '/auth/me' && method === 'GET') {
       requireSession();
       return [200, session];
@@ -302,7 +273,6 @@ export async function mockApi(
       return [204];
     }
 
-    // ---- Справочники
     if (path === '/directions' && method === 'GET') {
       requireSession();
       return [200, DIRECTIONS];
@@ -316,7 +286,6 @@ export async function mockApi(
       return [200, ['PENDING', 'APPROVED', 'REJECTED']];
     }
 
-    // ---- Участник
     if (path === '/applications' && method === 'GET') {
       const user = requireRole('PARTICIPANT');
       const own = applications.filter((a) => a.participantId === user.id).sort((a, b) => b.id - a.id);
@@ -368,7 +337,6 @@ export async function mockApi(
       return [200, toResponse(application)];
     }
 
-    // ---- Организатор
     if (path === '/organizer/applications' && method === 'GET') {
       const organizer = requireRole('ORGANIZER');
       const directionId = Number(url.searchParams.get('directionId'));
@@ -378,7 +346,7 @@ export async function mockApi(
 
       const matches = (a: MockApplication) =>
         (!status || a.status === status) && (!reviewStatus || a.reviewStatus === reviewStatus);
-      // Сначала заявки, переданные на это направление и ждущие ответа, потом собственные.
+
       const incoming = applications.filter((a) => a.transferToDirectionId === directionId && matches(a));
       const own = applications.filter((a) => a.directionId === directionId && matches(a));
       return [200, [...incoming, ...own].map(toResponse)];
@@ -432,7 +400,6 @@ export async function mockApi(
       return [200, toResponse(application)];
     }
 
-    // ---- Эксперт
     if (path === '/expert/applications' && method === 'GET') {
       const expert = requireRole('EXPERT');
       const direction = DIRECTIONS.find((d) => d.expertId === expert.id);
@@ -491,11 +458,6 @@ export async function mockApi(
   };
 }
 
-// ---------------------------------------------------------------------------
-// Общие действия пользователя в тестах
-// ---------------------------------------------------------------------------
-
-/** Входит через форму входа, как настоящий пользователь. */
 export async function loginAs(page: Page, user: MockUser, password = VALID_PASSWORD): Promise<void> {
   await page.goto('/login');
   await page.getByLabel('Email', { exact: true }).fill(user.email);
@@ -503,26 +465,19 @@ export async function loginAs(page: Page, user: MockUser, password = VALID_PASSW
   await page.getByRole('button', { name: 'Войти' }).click();
 }
 
-/** Нажимает «Выйти» и ждёт возвращения на страницу входа. */
 export async function logout(page: Page): Promise<void> {
   await page.getByRole('button', { name: 'Выйти' }).click();
   await expect(page).toHaveURL(/\/login$/);
 }
 
-/** Карточка заявки по её названию. */
 export function card(page: Page, title: string): Locator {
   return page.getByRole('article').filter({ has: page.getByRole('heading', { name: title, exact: true }) });
 }
 
-/** Заранее отвечает «ОК» (или «Отмена») на системное окно подтверждения. */
 export function answerConfirm(page: Page, accept: boolean): void {
   page.once('dialog', (dialog) => void (accept ? dialog.accept() : dialog.dismiss()));
 }
 
-/**
- * Выпадающий список по подписи. Обычный getByLabel здесь не подходит: подпись списка
- * браузер склеивает с текстом всех его вариантов, поэтому ищем по самой подписи.
- */
 export function selectField(page: Page, label: string): Locator {
   return page
     .locator('label.select')
