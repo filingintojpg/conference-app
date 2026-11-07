@@ -1,3 +1,8 @@
 node_modules
 dist
 .env
+
+# tests
+coverage
+playwright-report
+test-results

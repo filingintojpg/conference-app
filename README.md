@@ -129,3 +129,21 @@ GET /organizer/applications?directionId=1&status=SUBMITTED&reviewStatus=PENDING
 ```bash
 ./gradlew test
 ```
+
+## Tests
+
+### Backend
+
+```bash
+./gradlew test # unit tests (JUnit 5, Mockito)
+```
+
+### Frontend
+
+```bash
+cd frontend
+npm install
+npm test # unit and component tests (Vitest + React Testing Library)
+npx playwright install chromium
+npm run e2e # end-to-end tests in a real browser (Playwright), backend is mocked
+```
