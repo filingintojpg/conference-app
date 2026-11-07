@@ -1,7 +1,7 @@
 package com.maltsev.conference_app.service;
 
 import com.maltsev.conference_app.TestData;
-import com.maltsev.conference_app.dto.AuthResponse;
+import com.maltsev.conference_app.dto.AuthResult;
 import com.maltsev.conference_app.dto.LoginRequest;
 import com.maltsev.conference_app.dto.RegisterRequest;
 import com.maltsev.conference_app.exception.BadRequestException;
@@ -62,7 +62,7 @@ class AuthServiceTest {
         when(tokenService.issue(any(User.class))).thenReturn("jwt-token");
         when(tokenService.expiresInSeconds()).thenReturn(3600L);
 
-        AuthResponse response = service.register(registerRequest("  Ivan@Example.COM ", "secret-pass"));
+        AuthResult response = service.register(registerRequest("  Ivan@Example.COM ", "secret-pass"));
 
         ArgumentCaptor<User> saved = ArgumentCaptor.forClass(User.class);
         verify(userRepository).save(saved.capture());
@@ -74,7 +74,6 @@ class AuthServiceTest {
         assertTrue(passwordEncoder.matches("secret-pass", user.getPasswordHash()));
 
         assertEquals("jwt-token", response.accessToken());
-        assertEquals("Bearer", response.tokenType());
         assertEquals(3600L, response.expiresIn());
         assertEquals("ivan@example.com", response.user().email());
     }
@@ -114,7 +113,7 @@ class AuthServiceTest {
         when(tokenService.issue(user)).thenReturn("jwt-token");
         when(tokenService.expiresInSeconds()).thenReturn(3600L);
 
-        AuthResponse response = service.login(new LoginRequest("Ivan@example.com", "secret-pass"));
+        AuthResult response = service.login(new LoginRequest("Ivan@example.com", "secret-pass"));
 
         assertEquals("jwt-token", response.accessToken());
         assertEquals(1L, response.user().id());

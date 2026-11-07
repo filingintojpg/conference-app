@@ -1,4 +1,4 @@
-import { API_URL, STORAGE_KEYS } from '../config';
+import { API_URL, CSRF_COOKIE, CSRF_HEADER } from '../config';
 
 export type FieldErrors = Record<string, string>;
 
@@ -14,33 +14,22 @@ export class ApiError extends Error {
   }
 }
 
-// ---- Токен доступа (JWT). Хранится в localStorage, чтобы вход переживал перезагрузку страницы.
+// ---- Авторизация: JWT лежит в httpOnly-cookie, JavaScript его не видит и не хранит.
+// Браузер сам прикладывает cookie к каждому запросу (credentials: 'include').
+// От CSRF защищает заголовок X-XSRF-TOKEN: его значение берётся из cookie XSRF-TOKEN,
+// которую читает только наш сайт; чужой сайт прочитать её и подставить заголовок не может.
 
-export function getAccessToken(): string | null {
-  try {
-    return localStorage.getItem(STORAGE_KEYS.accessToken);
-  } catch {
-    return null;
+function readCookie(name: string): string | null {
+  const prefix = `${encodeURIComponent(name)}=`;
+  for (const part of document.cookie.split('; ')) {
+    if (part.startsWith(prefix)) return decodeURIComponent(part.slice(prefix.length));
   }
+  return null;
 }
 
-export function setAccessToken(token: string): void {
-  try {
-    localStorage.setItem(STORAGE_KEYS.accessToken, token);
-  } catch {
-    // localStorage недоступен - вход не переживёт перезагрузку.
-  }
-}
+const SAFE_METHODS = new Set(['GET', 'HEAD', 'OPTIONS']);
 
-export function clearAccessToken(): void {
-  try {
-    localStorage.removeItem(STORAGE_KEYS.accessToken);
-  } catch {
-    // ничего не делаем
-  }
-}
-
-// Вызывается, когда сервер ответил 401 на запрос с токеном (токен истёк или недействителен).
+// Вызывается, когда сервер ответил 401 на защищённый запрос (cookie истекла или недействительна).
 let unauthorizedHandler: (() => void) | null = null;
 
 export function setUnauthorizedHandler(handler: (() => void) | null): void {
@@ -55,7 +44,7 @@ export interface RequestOptions {
   method?: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
   params?: Record<string, QueryValue>;
   body?: unknown;
-  /** false - не отправлять токен и не считать 401 «сессия истекла» (вход и регистрация). */
+  /** false - 401 не считается «сессия истекла» (вход и регистрация). */
   auth?: boolean;
 }
 
@@ -79,14 +68,17 @@ export async function request<T>(
 ): Promise<T> {
   const headers: Record<string, string> = {};
   if (body !== undefined) headers['Content-Type'] = 'application/json';
-  const token = auth ? getAccessToken() : null;
-  if (token) headers.Authorization = `Bearer ${token}`;
+  if (!SAFE_METHODS.has(method)) {
+    const csrfToken = readCookie(CSRF_COOKIE);
+    if (csrfToken) headers[CSRF_HEADER] = csrfToken;
+  }
 
   let response: Response;
   try {
     response = await fetch(`${API_URL}${path}${buildQuery(params)}`, {
       method,
       headers,
+      credentials: 'include',
       body: body !== undefined ? JSON.stringify(body) : undefined,
     });
   } catch {
@@ -104,7 +96,7 @@ export async function request<T>(
   }
 
   if (!response.ok) {
-    if (response.status === 401 && auth && token) unauthorizedHandler?.();
+    if (response.status === 401 && auth) unauthorizedHandler?.();
     const errorBody = (data ?? {}) as ErrorBody;
     throw new ApiError(
       response.status,

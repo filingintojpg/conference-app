@@ -14,7 +14,7 @@ export default function Header() {
           <span>
             {user.fullName} ({labelOf(ROLE_LABELS, user.role)})
           </span>
-          <button type="button" onClick={logout}>
+          <button type="button" onClick={() => void logout()}>
             Выйти
           </button>
         </div>

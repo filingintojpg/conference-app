@@ -1,6 +1,6 @@
 package com.maltsev.conference_app.controller;
 
-import com.maltsev.conference_app.dto.AuthResponse;
+import com.maltsev.conference_app.dto.AuthResult;
 import com.maltsev.conference_app.dto.LoginRequest;
 import com.maltsev.conference_app.dto.RegisterRequest;
 import com.maltsev.conference_app.dto.UserResponse;
@@ -8,6 +8,7 @@ import com.maltsev.conference_app.exception.ConflictException;
 import com.maltsev.conference_app.exception.GlobalExceptionHandler;
 import com.maltsev.conference_app.exception.UnauthorizedException;
 import com.maltsev.conference_app.model.Role;
+import com.maltsev.conference_app.security.AuthCookies;
 import com.maltsev.conference_app.service.AuthService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -18,11 +19,14 @@ import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.not;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -35,13 +39,13 @@ class AuthControllerTest {
 
     @BeforeEach
     void setUp() {
-        mockMvc = MockMvcBuilders.standaloneSetup(new AuthController(service))
+        mockMvc = MockMvcBuilders.standaloneSetup(new AuthController(service, new AuthCookies(false, "Strict")))
                 .setControllerAdvice(new GlobalExceptionHandler())
                 .build();
     }
 
-    private static AuthResponse authResponse() {
-        return AuthResponse.bearer("jwt-token", 3600L,
+    private static AuthResult authResult() {
+        return new AuthResult("jwt-token", 3600L,
                 new UserResponse(1L, "Ivanov Ivan", "ivan@example.com", Role.PARTICIPANT));
     }
 
@@ -50,15 +54,18 @@ class AuthControllerTest {
             """;
 
     @Test
-    void register_success_returns201WithToken() throws Exception {
-        when(service.register(any(RegisterRequest.class))).thenReturn(authResponse());
+    void register_success_returns201AndSetsHttpOnlyCookie() throws Exception {
+        when(service.register(any(RegisterRequest.class))).thenReturn(authResult());
 
         mockMvc.perform(post("/auth/register").contentType(MediaType.APPLICATION_JSON).content(VALID_REGISTER))
                 .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.accessToken").value("jwt-token"))
-                .andExpect(jsonPath("$.tokenType").value("Bearer"))
-                .andExpect(jsonPath("$.user.role").value("PARTICIPANT"))
-                .andExpect(jsonPath("$.user.passwordHash").doesNotExist());
+                .andExpect(header().string("Set-Cookie", containsString("access_token=jwt-token")))
+                .andExpect(header().string("Set-Cookie", containsString("HttpOnly")))
+                .andExpect(header().string("Set-Cookie", containsString("SameSite=Strict")))
+                .andExpect(header().string("Set-Cookie", containsString("Max-Age=3600")))
+                .andExpect(jsonPath("$.role").value("PARTICIPANT"))
+                .andExpect(jsonPath("$.accessToken").doesNotExist())
+                .andExpect(jsonPath("$.passwordHash").doesNotExist());
     }
 
     @Test
@@ -98,13 +105,36 @@ class AuthControllerTest {
     }
 
     @Test
-    void login_success_returnsToken() throws Exception {
-        when(service.login(any(LoginRequest.class))).thenReturn(authResponse());
+    void login_success_setsCookieAndKeepsTokenOutOfBody() throws Exception {
+        when(service.login(any(LoginRequest.class))).thenReturn(authResult());
 
         mockMvc.perform(post("/auth/login").contentType(MediaType.APPLICATION_JSON)
                         .content("{\"email\":\"ivan@example.com\",\"password\":\"secret-pass\"}"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.accessToken").value("jwt-token"));
+                .andExpect(header().string("Set-Cookie", containsString("access_token=jwt-token")))
+                .andExpect(jsonPath("$.email").value("ivan@example.com"))
+                .andExpect(jsonPath("$.accessToken").doesNotExist());
+    }
+
+    @Test
+    void login_badCredentials_doesNotSetCookie() throws Exception {
+        when(service.login(any(LoginRequest.class))).thenThrow(new UnauthorizedException("Invalid email or password"));
+
+        mockMvc.perform(post("/auth/login").contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"email\":\"ivan@example.com\",\"password\":\"wrong\"}"))
+                .andExpect(status().isUnauthorized())
+                .andExpect(header().string("Set-Cookie", not(containsString("access_token"))));
+    }
+
+    @Test
+    void logout_returns204AndExpiresCookie() throws Exception {
+        mockMvc.perform(post("/auth/logout"))
+                .andExpect(status().isNoContent())
+                .andExpect(header().string("Set-Cookie", containsString("access_token=;")))
+                .andExpect(header().string("Set-Cookie", containsString("Max-Age=0")))
+                .andExpect(header().string("Set-Cookie", containsString("HttpOnly")));
+
+        verifyNoInteractions(service);
     }
 
     @Test

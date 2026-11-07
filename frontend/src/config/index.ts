@@ -3,9 +3,9 @@ import type { ApplicationStatus, ReviewStatus, Role } from '../types';
 // Адрес бэкенда. Меняется через frontend/.env (VITE_API_URL).
 export const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080';
 
-export const STORAGE_KEYS = {
-  accessToken: 'conference.accessToken',
-} as const;
+// Имена CSRF-cookie и заголовка совпадают с настройками Spring Security (CookieCsrfTokenRepository).
+export const CSRF_COOKIE = 'XSRF-TOKEN';
+export const CSRF_HEADER = 'X-XSRF-TOKEN';
 
 // Коды ролей и статусов - часть контракта с бэкендом.
 // Сами списки (пользователи, направления, статусы) приходят с бэкенда.

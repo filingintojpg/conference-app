@@ -56,6 +56,8 @@ docker compose down -v
 }
 ```
 
+#### POST `/auth/logout` - Sign out.
+
 #### GET `/auth/me` - Current user by token.
 
 ### Common

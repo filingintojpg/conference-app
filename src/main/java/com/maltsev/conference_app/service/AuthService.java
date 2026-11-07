@@ -1,6 +1,6 @@
 package com.maltsev.conference_app.service;
 
-import com.maltsev.conference_app.dto.AuthResponse;
+import com.maltsev.conference_app.dto.AuthResult;
 import com.maltsev.conference_app.dto.LoginRequest;
 import com.maltsev.conference_app.dto.RegisterRequest;
 import com.maltsev.conference_app.dto.UserResponse;
@@ -38,7 +38,7 @@ public class AuthService {
     }
 
     @Transactional
-    public AuthResponse register(RegisterRequest request) {
+    public AuthResult register(RegisterRequest request) {
         String[] email = splitEmail(request.email()).orElseThrow(() -> new BadRequestException("Invalid email address"));
 
         if (email[0].length() > 64 || email[1].length() > 255) {
@@ -68,7 +68,7 @@ public class AuthService {
     }
 
     @Transactional(readOnly = true)
-    public AuthResponse login(LoginRequest request) {
+    public AuthResult login(LoginRequest request) {
         Optional<User> found = splitEmail(request.email()).flatMap(email -> userRepository.findByEmailLocalAndEmailDomain(email[0], email[1]));
 
         if (found.isEmpty()) {
@@ -88,8 +88,8 @@ public class AuthService {
         return UserResponse.from(user);
     }
 
-    private AuthResponse toResponse(User user) {
-        return AuthResponse.bearer(tokenService.issue(user), tokenService.expiresInSeconds(), UserResponse.from(user));
+    private AuthResult toResponse(User user) {
+        return new AuthResult(tokenService.issue(user), tokenService.expiresInSeconds(), UserResponse.from(user));
     }
 
     private static Optional<String[]> splitEmail(String raw) {

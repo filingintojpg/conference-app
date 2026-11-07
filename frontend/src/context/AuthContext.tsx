@@ -7,45 +7,34 @@ import {
   useState,
   type ReactNode,
 } from 'react';
-import {
-  authApi,
-  clearAccessToken,
-  getAccessToken,
-  setAccessToken,
-  setUnauthorizedHandler,
-} from '../api';
-import type { AuthResponse, LoginPayload, RegisterPayload, User } from '../types';
+import { authApi, setUnauthorizedHandler } from '../api';
+import type { LoginPayload, RegisterPayload, User } from '../types';
 
 interface AuthContextValue {
   /** Вошедший пользователь или null. */
   user: User | null;
-  /** true, пока при запуске проверяется сохранённый токен. */
+  /** true, пока при запуске выясняется, есть ли действующая сессия (cookie). */
   initializing: boolean;
   login: (payload: LoginPayload) => Promise<void>;
   register: (payload: RegisterPayload) => Promise<void>;
-  logout: () => void;
+  logout: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
-  const [initializing, setInitializing] = useState<boolean>(() => getAccessToken() !== null);
+  // Cookie httpOnly, из JS её не видно - поэтому при каждом запуске спрашиваем сервер, кто мы.
+  const [initializing, setInitializing] = useState(true);
 
-  const logout = useCallback(() => {
-    clearAccessToken();
-    setUser(null);
+  // Сервер ответил 401 на защищённый запрос: cookie истекла или недействительна.
+  useEffect(() => {
+    setUnauthorizedHandler(() => setUser(null));
+    return () => setUnauthorizedHandler(null);
   }, []);
 
-  // Сервер ответил 401 на запрос с токеном: токен истёк или недействителен.
+  // При запуске восстанавливаем сессию по cookie. Заодно этот GET выдаёт браузеру cookie XSRF-TOKEN.
   useEffect(() => {
-    setUnauthorizedHandler(logout);
-    return () => setUnauthorizedHandler(null);
-  }, [logout]);
-
-  // При запуске восстанавливаем сессию по сохранённому токену.
-  useEffect(() => {
-    if (getAccessToken() === null) return undefined;
     let cancelled = false;
     authApi
       .me()
@@ -53,7 +42,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (!cancelled) setUser(me);
       })
       .catch(() => {
-        // 401 уже сбросил токен через unauthorizedHandler; при сетевой ошибке просто покажем вход.
+        // 401 - сессии нет, показываем вход. Сетевая ошибка - то же самое.
       })
       .finally(() => {
         if (!cancelled) setInitializing(false);
@@ -63,20 +52,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
   }, []);
 
-  const accept = useCallback((response: AuthResponse) => {
-    setAccessToken(response.accessToken);
-    setUser(response.user);
+  const login = useCallback(async (payload: LoginPayload) => {
+    setUser(await authApi.login(payload));
   }, []);
 
-  const login = useCallback(
-    async (payload: LoginPayload) => accept(await authApi.login(payload)),
-    [accept],
-  );
+  const register = useCallback(async (payload: RegisterPayload) => {
+    setUser(await authApi.register(payload));
+  }, []);
 
-  const register = useCallback(
-    async (payload: RegisterPayload) => accept(await authApi.register(payload)),
-    [accept],
-  );
+  const logout = useCallback(async () => {
+    try {
+      await authApi.logout();
+    } catch {
+      // Даже если сервер недоступен, локально считаем пользователя вышедшим.
+    }
+    setUser(null);
+  }, []);
 
   const value = useMemo<AuthContextValue>(
     () => ({ user, initializing, login, register, logout }),
