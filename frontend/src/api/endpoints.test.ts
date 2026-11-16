@@ -19,6 +19,7 @@ const cases: Case[] = [
   ['statuses.list', () => statusesApi.list(), ['/application-statuses']],
   ['reviewStatuses.list', () => reviewStatusesApi.list(), ['/review-statuses']],
   ['expert.list', () => expertApplicationsApi.list(), ['/expert/applications']],
+  ['expert.deleteAll', () => expertApplicationsApi.deleteAll(), ['/expert/applications', { method: 'DELETE' }]],
 
   ['participant.list', () => participantApplicationsApi.list(), ['/applications']],
   [

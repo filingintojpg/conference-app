@@ -1,7 +1,9 @@
 package com.maltsev.conference_app.service;
 
+import com.maltsev.conference_app.dto.DeletedApplicationsResponse;
 import com.maltsev.conference_app.dto.ExpertApplicationResponse;
 import com.maltsev.conference_app.exception.ForbiddenException;
+import com.maltsev.conference_app.model.Application;
 import com.maltsev.conference_app.model.ApplicationStatus;
 import com.maltsev.conference_app.model.Direction;
 import com.maltsev.conference_app.model.ReviewStatus;
@@ -25,10 +27,20 @@ public class ExpertApplicationService {
 
     @Transactional(readOnly = true)
     public List<ExpertApplicationResponse> list(Long expertId) {
+        return visibleApplications(expertId).stream().map(ExpertApplicationResponse::from).toList();
+    }
+
+    @Transactional
+    public DeletedApplicationsResponse deleteAll(Long expertId) {
+        List<Application> applications = visibleApplications(expertId);
+        applicationRepository.deleteAll(applications);
+        return new DeletedApplicationsResponse(applications.size());
+    }
+
+    private List<Application> visibleApplications(Long expertId) {
         Direction direction = directionRepository.findByExpertId(expertId)
                 .orElseThrow(() -> new ForbiddenException("Expert is not assigned to a direction"));
         return applicationRepository.findByDirectionIdAndReviewStatusAndStatusNotOrderById(
-                        direction.getId(), ReviewStatus.APPROVED, ApplicationStatus.WITHDRAWN)
-                .stream().map(ExpertApplicationResponse::from).toList();
+                direction.getId(), ReviewStatus.APPROVED, ApplicationStatus.WITHDRAWN);
     }
 }

@@ -6,3 +6,8 @@
 .expert-page > * + * {
   margin-top: var(--gap);
 }
+
+.expert-page__actions {
+  display: flex;
+  justify-content: flex-end;
+}

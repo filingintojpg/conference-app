@@ -1,6 +1,7 @@
 package com.maltsev.conference_app.service;
 
 import com.maltsev.conference_app.TestData;
+import com.maltsev.conference_app.dto.DeletedApplicationsResponse;
 import com.maltsev.conference_app.dto.ExpertApplicationResponse;
 import com.maltsev.conference_app.exception.ForbiddenException;
 import com.maltsev.conference_app.model.Application;
@@ -61,6 +62,41 @@ class ExpertApplicationServiceTest {
         when(directionRepository.findByExpertId(EXPERT_ID)).thenReturn(Optional.empty());
 
         assertThrows(ForbiddenException.class, () -> service.list(EXPERT_ID));
+        verifyNoInteractions(applicationRepository);
+    }
+
+    @Test
+    void deleteAll_deletesExactlyTheApplicationsTheExpertSees() {
+        Application second = TestData.application(6L, TestData.participant(2L), direction);
+        second.approve();
+        when(directionRepository.findByExpertId(EXPERT_ID)).thenReturn(Optional.of(direction));
+        when(applicationRepository.findByDirectionIdAndReviewStatusAndStatusNotOrderById(
+                DIRECTION_ID, ReviewStatus.APPROVED, ApplicationStatus.WITHDRAWN)).thenReturn(List.of(application, second));
+
+        DeletedApplicationsResponse result = service.deleteAll(EXPERT_ID);
+
+        assertEquals(2, result.deleted());
+        verify(applicationRepository).deleteAll(List.of(application, second));
+        verifyNoMoreInteractions(applicationRepository);
+    }
+
+    @Test
+    void deleteAll_nothingVisible_deletesNothingAndReturnsZero() {
+        when(directionRepository.findByExpertId(EXPERT_ID)).thenReturn(Optional.of(direction));
+        when(applicationRepository.findByDirectionIdAndReviewStatusAndStatusNotOrderById(
+                DIRECTION_ID, ReviewStatus.APPROVED, ApplicationStatus.WITHDRAWN)).thenReturn(List.of());
+
+        DeletedApplicationsResponse result = service.deleteAll(EXPERT_ID);
+
+        assertEquals(0, result.deleted());
+        verify(applicationRepository).deleteAll(List.of());
+    }
+
+    @Test
+    void deleteAll_expertWithoutDirection_throwsForbiddenAndDeletesNothing() {
+        when(directionRepository.findByExpertId(EXPERT_ID)).thenReturn(Optional.empty());
+
+        assertThrows(ForbiddenException.class, () -> service.deleteAll(EXPERT_ID));
         verifyNoInteractions(applicationRepository);
     }
 

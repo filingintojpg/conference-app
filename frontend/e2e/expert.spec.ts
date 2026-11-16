@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { AI_DIRECTION, EXPERT_WITHOUT_DIRECTION, IVAN, MARIA, PETR, card, mockApi } from './helpers/mockApi';
+import { AI_DIRECTION, EXPERT_WITHOUT_DIRECTION, IVAN, MARIA, PETR, answerConfirm, card, mockApi } from './helpers/mockApi';
 
 test.describe('эксперт', () => {
   test('эксперт видит название своего направления и подтверждённые заявки', async ({ page }) => {
@@ -88,5 +88,30 @@ test.describe('эксперт', () => {
     await page.goto('/');
 
     await expect(page.getByText('Expert is not assigned to a direction')).toBeVisible();
+  });
+
+  test('эксперт удаляет все видимые заявки после подтверждения', async ({ page }) => {
+    await mockApi(page, MARIA);
+    await page.goto('/');
+    await expect(card(page, 'Генерация текстов')).toBeVisible();
+
+    answerConfirm(page, true);
+    await page.getByRole('button', { name: 'Удалить все заявки' }).click();
+
+    await expect(page.getByText(/Удалено заявок: \d+/)).toBeVisible();
+    await expect(page.getByText('Подтверждённых заявок нет')).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Удалить все заявки' })).toHaveCount(0);
+  });
+
+  test('если эксперт отменил подтверждение, заявки остаются', async ({ page }) => {
+    await mockApi(page, MARIA);
+    await page.goto('/');
+    await expect(card(page, 'Генерация текстов')).toBeVisible();
+
+    answerConfirm(page, false);
+    await page.getByRole('button', { name: 'Удалить все заявки' }).click();
+
+    await expect(card(page, 'Генерация текстов')).toBeVisible();
+    await expect(page.getByText(/Удалено заявок/)).toHaveCount(0);
   });
 });

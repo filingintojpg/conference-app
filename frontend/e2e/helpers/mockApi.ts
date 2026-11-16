@@ -410,10 +410,68 @@ export async function mockApi(
       return [200, visible.map(toExpertResponse)];
     }
 
+    if (path === '/expert/applications' && method === 'DELETE') {
+      const expert = requireRole('EXPERT');
+      const direction = DIRECTIONS.find((d) => d.expertId === expert.id);
+      if (!direction) throw new HttpError(403, 'Expert is not assigned to a direction');
+      const visibleIds = new Set(
+          applications
+              .filter((a) => a.directionId === direction.id && a.reviewStatus === 'APPROVED' && a.status !== 'WITHDRAWN')
+              .map((a) => a.id),
+      );
+      for (let i = applications.length - 1; i >= 0; i -= 1) {
+        if (visibleIds.has(applications[i].id)) applications.splice(i, 1);
+      }
+      return [200, { deleted: visibleIds.size }];
+    }
+
     throw new HttpError(404, `Нет подмены для ${method} ${path}`);
   }
 
-  await page.route(`${API}
+  await page.route(`${API}/**`, async (route) => {
+    const request = route.request();
+    const url = new URL(request.url());
+    const method = request.method();
+
+    if (method === 'OPTIONS') {
+      return route.fulfill({ status: 204, headers: corsHeaders });
+    }
+    if (offline) return route.abort('connectionrefused');
+
+    const body = request.postData() ? request.postDataJSON() : undefined;
+    requests.push({ method, path: url.pathname, csrfHeader: request.headers()['x-xsrf-token'], body });
+
+    const failureIndex = failures.findIndex(
+        (f) => f.method === method && (typeof f.path === 'string' ? f.path === url.pathname : f.path.test(url.pathname)),
+    );
+    if (failureIndex >= 0) {
+      const [failure] = failures.splice(failureIndex, 1);
+      return reply(route, failure.status, { error: failure.message });
+    }
+
+    try {
+      const [status, payload] = handle(method, url, body);
+      return reply(route, status, payload);
+    } catch (error) {
+      if (error instanceof HttpError) return reply(route, error.status, { error: error.message });
+      throw error;
+    }
+  });
+
+  return {
+    requests,
+    setSession: (user) => {
+      session = user;
+    },
+    applications: () => applications.map((a) => ({ ...a })),
+    failNext: (method, path, status, message) => {
+      failures.push({ method, path, status, message });
+    },
+    setOffline: (value) => {
+      offline = value;
+    },
+  };
+}
 
 export async function loginAs(page: Page, user: MockUser, password = VALID_PASSWORD): Promise<void> {
   await page.goto('/login');

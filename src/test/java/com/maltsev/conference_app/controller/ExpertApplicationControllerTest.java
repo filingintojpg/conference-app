@@ -1,5 +1,6 @@
 package com.maltsev.conference_app.controller;
 
+import com.maltsev.conference_app.dto.DeletedApplicationsResponse;
 import com.maltsev.conference_app.dto.ExpertApplicationResponse;
 import com.maltsev.conference_app.exception.ForbiddenException;
 import com.maltsev.conference_app.exception.GlobalExceptionHandler;
@@ -17,6 +18,7 @@ import java.util.List;
 
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -93,6 +95,31 @@ class ExpertApplicationControllerTest {
         when(service.list(7L)).thenThrow(new ForbiddenException("Expert is not assigned to a direction"));
 
         mockMvc.perform(get(URL).principal(Auth.user("7")))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void deleteAll_returnsNumberOfDeletedApplications() throws Exception {
+        when(service.deleteAll(7L)).thenReturn(new DeletedApplicationsResponse(3));
+
+        mockMvc.perform(delete(URL).principal(Auth.user("7")))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.deleted").value(3));
+
+        verify(service).deleteAll(7L);
+    }
+
+    @Test
+    void deleteAll_missingAuthentication_returns401() throws Exception {
+        mockMvc.perform(delete(URL))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void deleteAll_expertWithoutDirection_returns403() throws Exception {
+        when(service.deleteAll(7L)).thenThrow(new ForbiddenException("Expert is not assigned to a direction"));
+
+        mockMvc.perform(delete(URL).principal(Auth.user("7")))
                 .andExpect(status().isForbidden());
     }
 }
