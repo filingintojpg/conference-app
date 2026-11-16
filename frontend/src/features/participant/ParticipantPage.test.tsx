@@ -44,6 +44,10 @@ const application: Application = {
   transferToDirectionName: null,
 };
 
+async function openList() {
+  await userEvent.setup().click(screen.getByRole('tab', { name: 'Мои заявки' }));
+}
+
 describe('ParticipantPage', () => {
   beforeEach(() => {
     vi.mocked(directionsApi.list).mockResolvedValue([direction]);
@@ -55,13 +59,38 @@ describe('ParticipantPage', () => {
     vi.restoreAllMocks();
   });
 
-  it('без заявок показывает пустой список', async () => {
+  it('по умолчанию открыта форма подачи заявки', async () => {
     vi.mocked(participantApplicationsApi.list).mockResolvedValue([]);
 
     render(<ParticipantPage />);
 
+    expect(await screen.findByRole('heading', { name: 'Новая заявка' })).toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: 'Подать заявку' })).toHaveAttribute('aria-selected', 'true');
+    expect(screen.queryByText('У вас пока нет заявок')).not.toBeInTheDocument();
+  });
+
+  it('без заявок вкладка «Мои заявки» показывает пустой список', async () => {
+    vi.mocked(participantApplicationsApi.list).mockResolvedValue([]);
+
+    render(<ParticipantPage />);
+    await screen.findByRole('heading', { name: 'Новая заявка' });
+    await openList();
+
     expect(await screen.findByText('У вас пока нет заявок')).toBeInTheDocument();
-    expect(screen.getByRole('heading', { name: 'Мои заявки' })).toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: 'Мои заявки' })).toHaveAttribute('aria-selected', 'true');
+    expect(screen.queryByRole('heading', { name: 'Новая заявка' })).not.toBeInTheDocument();
+  });
+
+  it('«Редактировать» переключает на форму с данными заявки', async () => {
+    vi.mocked(participantApplicationsApi.list).mockResolvedValue([application]);
+    render(<ParticipantPage />);
+    await screen.findByRole('heading', { name: 'Новая заявка' });
+    await openList();
+
+    await userEvent.setup().click(await screen.findByRole('button', { name: 'Редактировать' }));
+
+    expect(await screen.findByRole('heading', { name: 'Редактирование заявки' })).toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: 'Редактирование заявки' })).toHaveAttribute('aria-selected', 'true');
   });
 
   it('отзыв заявки: после подтверждения вызывает API и показывает сообщение', async () => {
@@ -69,6 +98,8 @@ describe('ParticipantPage', () => {
     vi.mocked(participantApplicationsApi.withdraw).mockResolvedValue({ ...application, status: 'WITHDRAWN' });
     vi.spyOn(window, 'confirm').mockReturnValue(true);
     render(<ParticipantPage />);
+    await screen.findByRole('heading', { name: 'Новая заявка' });
+    await openList();
 
     await userEvent.setup().click(await screen.findByRole('button', { name: 'Отозвать' }));
 
@@ -80,6 +111,8 @@ describe('ParticipantPage', () => {
     vi.mocked(participantApplicationsApi.list).mockResolvedValue([application]);
     vi.spyOn(window, 'confirm').mockReturnValue(false);
     render(<ParticipantPage />);
+    await screen.findByRole('heading', { name: 'Новая заявка' });
+    await openList();
 
     await userEvent.setup().click(await screen.findByRole('button', { name: 'Отозвать' }));
 
@@ -90,6 +123,8 @@ describe('ParticipantPage', () => {
     vi.mocked(participantApplicationsApi.list).mockResolvedValue([{ ...application, reviewStatus: 'APPROVED' }]);
 
     render(<ParticipantPage />);
+    await screen.findByRole('heading', { name: 'Новая заявка' });
+    await openList();
 
     expect(await screen.findByRole('button', { name: 'Редактировать' })).toBeDisabled();
     expect(screen.getByRole('button', { name: 'Отозвать' })).toBeEnabled();
@@ -99,6 +134,8 @@ describe('ParticipantPage', () => {
     vi.mocked(participantApplicationsApi.list).mockResolvedValue([{ ...application, status: 'WITHDRAWN' }]);
 
     render(<ParticipantPage />);
+    await screen.findByRole('heading', { name: 'Новая заявка' });
+    await openList();
 
     expect(await screen.findByRole('button', { name: 'Редактировать' })).toBeDisabled();
     expect(screen.getByRole('button', { name: 'Отозвать' })).toBeDisabled();
