@@ -1,5 +1,6 @@
 .organizer-page {
   max-width: 800px;
+  margin: 0 auto;
 }
 
 .organizer-page__filters {
