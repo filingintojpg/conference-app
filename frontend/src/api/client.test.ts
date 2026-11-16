@@ -64,6 +64,40 @@ describe('api client: авторизация через httpOnly-cookie и CSRF'
     expect(lastCall().init.headers).not.toHaveProperty('X-XSRF-TOKEN');
   });
 
+  it('повторяет POST один раз, если сервер отклонил его из-за отсутствия CSRF-токена', async () => {
+    fetchMock
+      .mockImplementationOnce(() => {
+        setCsrfCookie('fresh-token');
+        return Promise.resolve(jsonResponse(403, { error: 'Invalid or missing CSRF token' }));
+      })
+      .mockResolvedValueOnce(jsonResponse(200, { id: 1 }));
+
+    const result = await request('/applications', { method: 'POST', body: { title: 'T' } });
+
+    expect(result).toEqual({ id: 1 });
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    const [, firstInit] = fetchMock.mock.calls[0] as [string, RequestInit];
+    const [, secondInit] = fetchMock.mock.calls[1] as [string, RequestInit];
+    expect(firstInit.headers).not.toHaveProperty('X-XSRF-TOKEN');
+    expect(secondInit.headers).toMatchObject({ 'X-XSRF-TOKEN': 'fresh-token' });
+  });
+
+  it('не повторяет запрос бесконечно, если CSRF-ошибка остаётся', async () => {
+    fetchMock.mockImplementation(() =>
+      Promise.resolve(jsonResponse(403, { error: 'Invalid or missing CSRF token' })),
+    );
+
+    await expect(request('/applications', { method: 'POST' })).rejects.toMatchObject({ status: 403 });
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+  });
+
+  it('не повторяет запрос при обычном 403 (нет прав)', async () => {
+    fetchMock.mockResolvedValue(jsonResponse(403, { error: 'Your role has no access to this resource' }));
+
+    await expect(request('/applications', { method: 'POST' })).rejects.toMatchObject({ status: 403 });
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
   it('не использует localStorage для токена', async () => {
     const setItem = vi.spyOn(Storage.prototype, 'setItem');
     const getItem = vi.spyOn(Storage.prototype, 'getItem');

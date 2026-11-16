@@ -54,9 +54,24 @@ function buildQuery(params?: Record<string, QueryValue>): string {
   return query ? `?${query}` : '';
 }
 
-export async function request<T>(
+function isCsrfRejection(error: unknown): boolean {
+  return error instanceof ApiError && error.status === 403 && /csrf/i.test(error.message);
+}
+
+export async function request<T>(path: string, options: RequestOptions = {}): Promise<T> {
+  try {
+    return await send<T>(path, options);
+  } catch (error) {
+    if (!SAFE_METHODS.has(options.method ?? 'GET') && isCsrfRejection(error)) {
+      return send<T>(path, options);
+    }
+    throw error;
+  }
+}
+
+async function send<T>(
   path: string,
-  { method = 'GET', params, body, auth = true }: RequestOptions = {},
+  { method = 'GET', params, body, auth = true }: RequestOptions,
 ): Promise<T> {
   const headers: Record<string, string> = {};
   if (body !== undefined) headers['Content-Type'] = 'application/json';
