@@ -13,6 +13,7 @@ import {
   mockApi,
   selectField,
 } from './helpers/mockApi';
+import { openMyApplications } from './helpers/participant';
 
 test.describe('путь заявки через все роли', () => {
   test('участник подаёт заявку, организатор подтверждает, эксперт её видит', async ({ page }) => {
@@ -42,6 +43,7 @@ test.describe('путь заявки через все роли', () => {
     await logout(page);
 
     await loginAs(page, IVAN);
+    await openMyApplications(page);
     await expect(card(page, 'Доклад про нейросети').getByText('Прошла проверку')).toBeVisible();
   });
 
@@ -58,6 +60,7 @@ test.describe('путь заявки через все роли', () => {
     await logout(page);
 
     await loginAs(page, IVAN);
+    await openMyApplications(page);
     await expect(card(page, 'Слабый доклад').getByText('Не прошла проверку')).toBeVisible();
     await expect(card(page, 'Слабый доклад').getByRole('button', { name: 'Редактировать' })).toBeDisabled();
   });
@@ -73,6 +76,7 @@ test.describe('путь заявки через все роли', () => {
     await logout(page);
 
     await loginAs(page, IVAN);
+    await openMyApplications(page);
     answerConfirm(page, true);
     await card(page, 'Передумал участвовать').getByRole('button', { name: 'Отозвать' }).click();
     await expect(page.getByText('Заявка отозвана')).toBeVisible();
@@ -98,6 +102,7 @@ test.describe('путь заявки через все роли', () => {
     await logout(page);
 
     await loginAs(page, IVAN);
+    await openMyApplications(page);
     const application = card(page, 'Не в то направление');
     await expect(application.getByText(`Направление: ${CYBER_DIRECTION}`)).toBeVisible();
     await expect(application.getByText('Передана с направления «Искусственный интеллект»')).toBeVisible();

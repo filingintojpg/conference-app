@@ -1,11 +1,57 @@
 import { expect, test } from '@playwright/test';
 import { ARCHIVE_DIRECTION, CYBER_DIRECTION, IVAN, PETR, answerConfirm, card, mockApi, selectField } from './helpers/mockApi';
+import { openApplicationForm, openMyApplications } from './helpers/participant';
+
+test.describe('участник: вкладки', () => {
+  test('по умолчанию открыта форма подачи заявки, список заявок скрыт', async ({ page }) => {
+    await mockApi(page, IVAN);
+
+    await page.goto('/');
+
+    await expect(page.getByRole('heading', { name: 'Новая заявка' })).toBeVisible();
+    await expect(page.getByRole('tab', { name: 'Подать заявку' })).toHaveAttribute('aria-selected', 'true');
+    await expect(page.getByRole('tab', { name: 'Мои заявки' })).toHaveAttribute('aria-selected', 'false');
+    await expect(page.getByRole('article')).toHaveCount(0);
+  });
+
+  test('участник переключается между формой и списком своих заявок', async ({ page }) => {
+    await mockApi(page, IVAN);
+    await page.goto('/');
+
+    await openMyApplications(page);
+    await expect(card(page, 'Нейросети в медицине')).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Новая заявка' })).toHaveCount(0);
+
+    await openApplicationForm(page);
+    await expect(page.getByRole('heading', { name: 'Новая заявка' })).toBeVisible();
+    await expect(page.getByRole('article')).toHaveCount(0);
+  });
+
+  test('сообщение об успехе пропадает при переключении вкладок', async ({ page }) => {
+    await mockApi(page, IVAN);
+    await page.goto('/');
+
+    await selectField(page, 'Направление').selectOption({ value: '1' });
+    await page.getByLabel('Название', { exact: true }).fill('Тема для проверки');
+    await page.getByLabel('Аннотация', { exact: true }).fill('Коротко.');
+    await page.getByLabel('Содержание', { exact: true }).fill('Подробно.');
+    await page.getByRole('button', { name: 'Подать заявку' }).click();
+    await expect(page.getByText('Заявка подана')).toBeVisible();
+
+    await openApplicationForm(page);
+    await openMyApplications(page);
+
+    await expect(page.getByText('Заявка подана')).toHaveCount(0);
+    await expect(card(page, 'Тема для проверки')).toBeVisible();
+  });
+});
 
 test.describe('участник: свои заявки', () => {
   test('участник видит только свои заявки, чужих нет', async ({ page }) => {
     await mockApi(page, IVAN);
 
     await page.goto('/');
+    await openMyApplications(page);
 
     await expect(card(page, 'Нейросети в медицине')).toBeVisible();
     await expect(card(page, 'Генерация текстов')).toBeVisible();
@@ -18,6 +64,7 @@ test.describe('участник: свои заявки', () => {
     await mockApi(page, IVAN);
 
     await page.goto('/');
+    await openMyApplications(page);
 
     const waiting = card(page, 'Нейросети в медицине');
     await expect(waiting.getByText('Направление: Искусственный интеллект')).toBeVisible();
@@ -31,6 +78,7 @@ test.describe('участник: свои заявки', () => {
     await mockApi(page, { user: IVAN, applications: [] });
 
     await page.goto('/');
+    await openMyApplications(page);
 
     await expect(page.getByText('У вас пока нет заявок')).toBeVisible();
   });
@@ -39,6 +87,7 @@ test.describe('участник: свои заявки', () => {
     await mockApi(page, PETR);
 
     await page.goto('/');
+    await openMyApplications(page);
 
     await expect(card(page, 'Распознавание речи')).toBeVisible();
     await expect(page.getByRole('heading', { name: 'Нейросети в медицине' })).toHaveCount(0);
@@ -56,6 +105,7 @@ test.describe('участник: подача заявки', () => {
     await page.getByLabel('Содержание', { exact: true }).fill('Подробное описание доклада.');
     await page.getByRole('button', { name: 'Подать заявку' }).click();
 
+    await expect(page.getByRole('tab', { name: 'Мои заявки' })).toHaveAttribute('aria-selected', 'true');
     await expect(page.getByText('Заявка подана')).toBeVisible();
     const created = card(page, 'Безопасность умного дома');
     await expect(created).toBeVisible();
@@ -75,6 +125,9 @@ test.describe('участник: подача заявки', () => {
     await page.getByRole('button', { name: 'Подать заявку' }).click();
     await expect(page.getByText('Заявка подана')).toBeVisible();
 
+    await openApplicationForm(page);
+
+    await expect(selectField(page, 'Направление')).toHaveValue('');
     await expect(page.getByLabel('Название', { exact: true })).toHaveValue('');
     await expect(page.getByLabel('Аннотация', { exact: true })).toHaveValue('');
     await expect(page.getByLabel('Содержание', { exact: true })).toHaveValue('');
@@ -88,6 +141,9 @@ test.describe('участник: подача заявки', () => {
     await page.getByRole('button', { name: 'Подать заявку' }).click();
 
     expect(api.requests.some((r) => r.method === 'POST' && r.path === '/applications')).toBe(false);
+    await expect(page.getByRole('heading', { name: 'Новая заявка' })).toBeVisible();
+
+    await openMyApplications(page);
     await expect(page.getByRole('heading', { name: 'Только название' })).toHaveCount(0);
   });
 
@@ -112,6 +168,7 @@ test.describe('участник: подача заявки', () => {
     await page.getByRole('button', { name: 'Подать заявку' }).click();
 
     await expect(page.getByText('Приём заявок на это направление закрыт')).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Новая заявка' })).toBeVisible();
     await expect(page.getByLabel('Название', { exact: true })).toHaveValue('Опоздавшая тема');
   });
 });
@@ -120,9 +177,11 @@ test.describe('участник: редактирование', () => {
   test('участник исправляет заявку, которую ещё не проверили', async ({ page }) => {
     await mockApi(page, IVAN);
     await page.goto('/');
+    await openMyApplications(page);
 
     await card(page, 'Нейросети в медицине').getByRole('button', { name: 'Редактировать' }).click();
     await expect(page.getByRole('heading', { name: 'Редактирование заявки' })).toBeVisible();
+    await expect(page.getByRole('tab', { name: 'Редактирование заявки' })).toHaveAttribute('aria-selected', 'true');
     await page.getByLabel('Название', { exact: true }).fill('Нейросети в диагностике');
     await page.getByRole('button', { name: 'Сохранить' }).click();
 
@@ -130,34 +189,42 @@ test.describe('участник: редактирование', () => {
     const edited = card(page, 'Нейросети в диагностике');
     await expect(edited.getByText('Изменена', { exact: true })).toBeVisible();
     await expect(page.getByRole('heading', { name: 'Нейросети в медицине' })).toHaveCount(0);
-    await expect(page.getByRole('heading', { name: 'Новая заявка' })).toBeVisible();
+    await expect(page.getByRole('tab', { name: 'Подать заявку' })).toBeVisible();
+    await expect(page.getByRole('tab', { name: 'Редактирование заявки' })).toHaveCount(0);
   });
 
   test('при редактировании направление изменить нельзя', async ({ page }) => {
     await mockApi(page, IVAN);
     await page.goto('/');
+    await openMyApplications(page);
 
     await card(page, 'Нейросети в медицине').getByRole('button', { name: 'Редактировать' }).click();
 
     await expect(selectField(page, 'Направление')).toBeDisabled();
   });
 
-  test('отмена редактирования возвращает форму новой заявки без изменений', async ({ page }) => {
+  test('отмена редактирования возвращает к списку заявок без изменений', async ({ page }) => {
     await mockApi(page, IVAN);
     await page.goto('/');
+    await openMyApplications(page);
 
     await card(page, 'Нейросети в медицине').getByRole('button', { name: 'Редактировать' }).click();
     await page.getByLabel('Название', { exact: true }).fill('Случайная правка');
     await page.getByRole('button', { name: 'Отмена' }).click();
 
-    await expect(page.getByRole('heading', { name: 'Новая заявка' })).toBeVisible();
+    await expect(page.getByRole('tab', { name: 'Мои заявки' })).toHaveAttribute('aria-selected', 'true');
     await expect(card(page, 'Нейросети в медицине')).toBeVisible();
     await expect(page.getByRole('heading', { name: 'Случайная правка' })).toHaveCount(0);
+
+    await openApplicationForm(page);
+    await expect(page.getByRole('heading', { name: 'Новая заявка' })).toBeVisible();
+    await expect(page.getByLabel('Название', { exact: true })).toHaveValue('');
   });
 
   test('заявку, уже проверенную организатором, редактировать нельзя - только отозвать', async ({ page }) => {
     await mockApi(page, IVAN);
     await page.goto('/');
+    await openMyApplications(page);
 
     const checked = card(page, 'Генерация текстов');
 
@@ -168,6 +235,7 @@ test.describe('участник: редактирование', () => {
   test('если приём заявок закрыт, заявку нельзя ни изменить, ни отозвать', async ({ page }) => {
     await mockApi(page, IVAN);
     await page.goto('/');
+    await openMyApplications(page);
 
     const old = card(page, 'Старая работа');
 
@@ -180,6 +248,7 @@ test.describe('участник: отзыв заявки', () => {
   test('участник отзывает заявку, и она помечается как отозванная', async ({ page }) => {
     const api = await mockApi(page, IVAN);
     await page.goto('/');
+    await openMyApplications(page);
 
     answerConfirm(page, true);
     await card(page, 'Нейросети в медицине').getByRole('button', { name: 'Отозвать' }).click();
@@ -195,6 +264,7 @@ test.describe('участник: отзыв заявки', () => {
   test('перед отзывом спрашивают подтверждение с названием заявки', async ({ page }) => {
     await mockApi(page, IVAN);
     await page.goto('/');
+    await openMyApplications(page);
 
     let question = '';
     page.once('dialog', async (dialog) => {
@@ -209,6 +279,7 @@ test.describe('участник: отзыв заявки', () => {
   test('если участник передумал отзывать, заявка остаётся как была', async ({ page }) => {
     const api = await mockApi(page, IVAN);
     await page.goto('/');
+    await openMyApplications(page);
 
     answerConfirm(page, false);
     await card(page, 'Защита паролей').getByRole('button', { name: 'Отозвать' }).click();
@@ -222,6 +293,7 @@ test.describe('участник: отзыв заявки', () => {
     const api = await mockApi(page, IVAN);
     api.failNext('POST', /\/withdraw$/, 409, 'Application is already withdrawn');
     await page.goto('/');
+    await openMyApplications(page);
 
     answerConfirm(page, true);
     await card(page, 'Защита паролей').getByRole('button', { name: 'Отозвать' }).click();
@@ -229,16 +301,24 @@ test.describe('участник: отзыв заявки', () => {
     await expect(page.getByText('Application is already withdrawn')).toBeVisible();
   });
 
-  test('участник может отозвать заявку прямо во время её редактирования', async ({ page }) => {
+  test('участник может отозвать заявку, которую начал редактировать', async ({ page }) => {
     await mockApi(page, IVAN);
     await page.goto('/');
+    await openMyApplications(page);
 
     await card(page, 'Нейросети в медицине').getByRole('button', { name: 'Редактировать' }).click();
+    await expect(page.getByRole('heading', { name: 'Редактирование заявки' })).toBeVisible();
+
+    await openMyApplications(page);
     answerConfirm(page, true);
     await card(page, 'Нейросети в медицине').getByRole('button', { name: 'Отозвать' }).click();
 
     await expect(page.getByText('Заявка отозвана')).toBeVisible();
+    await expect(page.getByRole('tab', { name: 'Редактирование заявки' })).toHaveCount(0);
+
+    await openApplicationForm(page);
     await expect(page.getByRole('heading', { name: 'Новая заявка' })).toBeVisible();
+    await expect(page.getByLabel('Название', { exact: true })).toHaveValue('');
   });
 });
 
@@ -247,7 +327,8 @@ test.describe('участник: чего на экране нет', () => {
     await mockApi(page, IVAN);
 
     await page.goto('/');
-    await expect(page.getByRole('heading', { name: 'Мои заявки' })).toBeVisible();
+    await openMyApplications(page);
+    await expect(card(page, 'Нейросети в медицине')).toBeVisible();
 
     await expect(page.getByRole('button', { name: 'Подтвердить' })).toHaveCount(0);
     await expect(page.getByRole('button', { name: 'Отклонить' })).toHaveCount(0);
@@ -258,7 +339,8 @@ test.describe('участник: чего на экране нет', () => {
     await mockApi(page, IVAN);
 
     await page.goto('/');
-    await expect(page.getByRole('heading', { name: 'Мои заявки' })).toBeVisible();
+    await openMyApplications(page);
+    await expect(card(page, 'Нейросети в медицине')).toBeVisible();
 
     await expect(page.getByText(PETR.email)).toHaveCount(0);
     await expect(page.getByText(/Участник:/)).toHaveCount(0);

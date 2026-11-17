@@ -1,5 +1,10 @@
 import { expect, test } from '@playwright/test';
 import { IVAN, ROLE_SCREENS, VALID_PASSWORD, answerConfirm, card, loginAs, logout, mockApi } from './helpers/mockApi';
+import { PARTICIPANT_HOME_HEADING, openMyApplications } from './helpers/participant';
+
+const SCREENS = ROLE_SCREENS.map((screen) =>
+  screen.user === IVAN ? { ...screen, heading: PARTICIPANT_HOME_HEADING } : screen,
+);
 
 test.describe('вход в систему', () => {
   test('гостя с главной страницы перенаправляет на вход', async ({ page }) => {
@@ -11,7 +16,7 @@ test.describe('вход в систему', () => {
     await expect(page.getByRole('heading', { name: 'Вход' })).toBeVisible();
   });
 
-  for (const { user, roleLabel, heading } of ROLE_SCREENS) {
+  for (const { user, roleLabel, heading } of SCREENS) {
     test(`вход: ${roleLabel} попадает на свой экран`, async ({ page }) => {
       await mockApi(page);
 
@@ -70,12 +75,12 @@ test.describe('вход в систему', () => {
     await page.goto('/login');
 
     await expect(page).toHaveURL('/');
-    await expect(page.getByRole('heading', { name: 'Мои заявки' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: PARTICIPANT_HOME_HEADING })).toBeVisible();
   });
 });
 
 test.describe('сессия', () => {
-  for (const { user, heading, roleLabel } of ROLE_SCREENS) {
+  for (const { user, heading, roleLabel } of SCREENS) {
     test(`после обновления страницы ${roleLabel} остаётся в системе`, async ({ page }) => {
       await mockApi(page, user);
 
@@ -89,7 +94,7 @@ test.describe('сессия', () => {
     });
   }
 
-  for (const { user, roleLabel } of ROLE_SCREENS) {
+  for (const { user, roleLabel } of SCREENS) {
     test(`выход: ${roleLabel} возвращается на страницу входа и не может вернуться назад без пароля`, async ({ page }) => {
       const api = await mockApi(page, user);
       await page.goto('/');
@@ -108,7 +113,8 @@ test.describe('сессия', () => {
   test('если время сессии истекло, пользователя возвращают на страницу входа', async ({ page }) => {
     const api = await mockApi(page, IVAN);
     await page.goto('/');
-    await expect(page.getByRole('heading', { name: 'Мои заявки' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: PARTICIPANT_HOME_HEADING })).toBeVisible();
+    await openMyApplications(page);
 
     api.setSession(null);
     answerConfirm(page, true);
@@ -123,7 +129,7 @@ test.describe('сессия', () => {
     await page.goto('/такой-страницы-нет');
 
     await expect(page).toHaveURL('/');
-    await expect(page.getByRole('heading', { name: 'Мои заявки' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: PARTICIPANT_HOME_HEADING })).toBeVisible();
   });
 });
 
@@ -152,8 +158,9 @@ test.describe('регистрация', () => {
 
     await fillRegistration(page);
 
-    await expect(page.getByRole('heading', { name: 'Мои заявки' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: PARTICIPANT_HOME_HEADING })).toBeVisible();
     await expect(page.getByText('Фёдоров Фёдор (участник)')).toBeVisible();
+    await openMyApplications(page);
     await expect(page.getByText('У вас пока нет заявок')).toBeVisible();
   });
 
